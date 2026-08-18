@@ -376,7 +376,7 @@ Anotadas porque son las que no se ven en el código y volverían a morder:
 .venv/bin/pytest -q
 ```
 
-223 tests, sin red. Cubren el parseo de las tres fuentes con nulls y formatos
+263 tests, sin red. Cubren el parseo de las tres fuentes con nulls y formatos
 raros, el macro haversine contra distancias conocidas (incluido el cruce del
 antimeridiano), la distancia circular entre días del año, y la coherencia del
 catálogo.
@@ -489,6 +489,48 @@ de muestra. Mientras tanto el Pacífico occidental, con r = 0,73, la batió en u
 
 ## Licencia y atribución
 
-Los datos son de sus respectivas fuentes y cada una tiene sus términos.
-Open-Meteo es gratis solo para uso **no comercial**. eBird exige atribución a
-Cornell Lab of Ornithology.
+El catálogo completo vive en `src/appclima/attribution.py` y se sirve en
+`/sources`. Está en Python y no escrito a mano en el HTML por la misma razón que
+el catálogo de ciudades: así se versiona, se testea y no se queda obsoleto la
+primera vez que se añade una fuente.
+
+**Cinco de las nueve fuentes exigen atribución explícita** y **tres restringen el
+uso comercial**, que es la razón de que este proyecto sea y siga siendo gratuito:
+
+| Fuente | Uso comercial |
+|---|---|
+| Open-Meteo | ❌ Prohibido en el plan gratuito — incluye publicidad y patrocinios |
+| eBird | ⚠️ Requiere permiso del Cornell Lab |
+| GBIF | ⚠️ Algunos datasets subyacentes son CC BY-NC |
+| USGS, NOAA NCEI, IBTrACS, NOAA CPC | ✅ Dominio público |
+| Banco Mundial | ✅ CC BY 4.0 |
+
+**Y una cita que está incompleta, porque conviene decirlo.** Se usó la API de
+búsqueda de GBIF con facetas, que devuelve recuentos y no registros, así que GBIF
+no emite DOI. Una cita formal exige la API de descargas —cuenta gratuita— y da un
+DOI citable con la lista exacta de datasets y publicadores. Es lo que habría que
+hacer antes de publicar cualquier resultado basado en GBIF.
+
+## Lo que buscamos y no está
+
+`src/appclima/null_findings.py` documenta **diez resultados nulos**, servidos en
+`/patterns/nulls` y mostrados en la web.
+
+Publicar los nulos no es humildad decorativa: demuestra que lo que sí se afirma
+pasó por el mismo filtro. Cada entrada exige la afirmación contrastada, el
+estadístico con su n y su umbral, por qué es un nulo y no falta de datos, y qué
+se aprende.
+
+Los tres que mejor resumen la disciplina del proyecto:
+
+- **El «clima sísmico» no existe.** r = 0,012 sobre 87.654 días-ciudad, el
+  0,014% de la varianza.
+- **La fenología de aves no es medible con ciencia ciudadana.** El placebo
+  —carbonero contra gorrión, ambos residentes— da ±2,5 a 5,6 días/década: el
+  suelo de ruido del método es tan grande como cualquier residuo.
+- **El 92% de las correlaciones del panel mensual son falsas.** De 153 pares, 77
+  superan el umbral ingenuo y 6 sobreviven a las correcciones.
+
+Un test comprueba que cada nulo lleve su cifra, que justifique por qué no es
+falta de datos, y que cubran al menos cinco dominios — si todos fueran del mismo,
+sería sesgo de búsqueda.

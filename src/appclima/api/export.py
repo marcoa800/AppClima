@@ -70,6 +70,8 @@ def _routes() -> dict[str, Callable[[], Any]]:
         "predict/heatwave": api.heatwave_model,
         "predict/aftershocks": lambda: api.aftershock_forecast(limit=30),
         "events": lambda: api.historical_events(category=None),
+        "sources": api.data_sources,
+        "patterns/nulls": api.null_findings,
         "panels/coverage": lambda: api.panel_coverage(panel=None),
         "panels/year": lambda: api.year_panel(
             from_year=1900, to_year=2026, regime=None

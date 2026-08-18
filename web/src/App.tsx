@@ -9,7 +9,9 @@ import {
   type CycloneSeason,
   type CycloneTrend,
   type DeadliestEvent,
+  type DataSource,
   type ModelSkill,
+  type NullFinding,
   type SkillByCut,
   type ClimatologyDay,
   type Location,
@@ -26,7 +28,9 @@ import { CycloneSeasonsChart } from './components/CycloneSeasonsChart'
 import { DeadliestChart } from './components/DeadliestChart'
 import { ClimatologyChart } from './components/ClimatologyChart'
 import { GutenbergRichterChart } from './components/GutenbergRichterChart'
+import { Attribution } from './components/Attribution'
 import { ModelSkillTable } from './components/ModelSkillTable'
+import { NullFindings } from './components/NullFindings'
 import { MythTable } from './components/MythTable'
 import { OmoriChart } from './components/OmoriChart'
 
@@ -46,6 +50,11 @@ type Global = {
   birdCorr: BirdCorrelations | null
   skill: ModelSkill[]
   skillByCut: SkillByCut[]
+  nulls: NullFinding[]
+  nullsWhy: string
+  sources: DataSource[]
+  sourcesCommercial: string
+  sourcesCitation: string
   freshness: Record<string, string | null>
 }
 
@@ -70,9 +79,11 @@ export default function App() {
       api.cycloneSeasons(),
       api.birdsSummary(),
       api.modelSkill(),
+      api.nulls(),
+      api.sources(),
       api.health(),
     ])
-      .then(([locations, warming, gr, omori, myth, deadliest, cascades, cyclones, birds, skill, health]) =>
+      .then(([locations, warming, gr, omori, myth, deadliest, cascades, cyclones, birds, skill, nulls, sources, health]) =>
         setGlobal({
           locations,
           warming: warming.by_year,
@@ -89,6 +100,11 @@ export default function App() {
           birdCorr: birds.correlations,
           skill: skill.models,
           skillByCut: skill.by_cut,
+          nulls: nulls.findings,
+          nullsWhy: nulls.de_donde_salen,
+          sources: sources.sources,
+          sourcesCommercial: sources.aviso_comercial,
+          sourcesCitation: sources.cita_incompleta,
           freshness: health.freshness,
         }),
       )
@@ -401,6 +417,33 @@ export default function App() {
           de publicación vive en los datos, no en el frontend — para que la
           tentación de enseñar el número bonito no gane.
         </p>
+      </section>
+
+
+      <section className="card">
+        <h2>Lo que buscamos y no está</h2>
+        <p className="note">
+          Diez cosas que se midieron esperando encontrar algo, y no salieron.
+          Publicarlas no es humildad decorativa: demuestra que lo que sí se
+          afirma arriba pasó por el mismo filtro. Cada una lleva su cifra, su
+          tamaño de muestra y por qué es un nulo y no falta de datos.
+        </p>
+        <NullFindings findings={global.nulls} />
+        <p className="caveat">{global.nullsWhy}</p>
+      </section>
+
+      <section className="card">
+        <h2>Fuentes, licencias y atribución</h2>
+        <p className="note">
+          Once fuentes abiertas. Cinco exigen atribución explícita y tres
+          restringen el uso comercial — por eso este proyecto es y seguirá
+          siendo gratuito.
+        </p>
+        <Attribution
+          sources={global.sources}
+          avisoComercial={global.sourcesCommercial}
+          citaIncompleta={global.sourcesCitation}
+        />
       </section>
 
       <footer className="credits">

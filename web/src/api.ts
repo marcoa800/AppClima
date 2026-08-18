@@ -250,6 +250,30 @@ export type SkillByCut = {
   improvement_pct: number
 }
 
+export type NullFinding = {
+  id: string
+  claim: string
+  verdict: string
+  statistic: string
+  why_solid: string
+  lesson: string
+  strength: 'definitivo' | 'sólido' | 'provisional'
+  domain: string
+}
+
+export type DataSource = {
+  id: string
+  name: string
+  organization: string
+  url: string
+  license: string
+  commercial_use: string
+  attribution_required: boolean
+  citation: string
+  what_we_use: string
+  note: string | null
+}
+
 export const api = {
   health: () =>
     get<{ status: string; freshness: Record<string, string | null> }>('/health'),
@@ -299,6 +323,18 @@ export const api = {
       criterio: string
       por_que_la_mediana: string
     }>('/models/skill'),
+  nulls: () =>
+    get<{
+      findings: NullFinding[]
+      por_que_publicarlos: string
+      de_donde_salen: string
+    }>('/patterns/nulls'),
+  sources: () =>
+    get<{
+      sources: DataSource[]
+      aviso_comercial: string
+      cita_incompleta: string
+    }>('/sources'),
   quakes: (near: string) =>
     get<Quake[]>('/quakes', { near, min_magnitude: 4.5, limit: 50 }),
 }

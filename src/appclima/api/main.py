@@ -1112,3 +1112,51 @@ def month_panel(
             "del ENSO no existe sin resolución intraanual."
         ),
     }
+
+
+# ─── Atribución y resultados nulos ───────────────────────────────────────────
+
+
+@app.get("/sources", summary="Fuentes, licencias y atribución obligatoria")
+def data_sources() -> dict:
+    from appclima.attribution import SOURCES
+
+    return {
+        "sources": [s.model_dump() for s in SOURCES],
+        "aviso_comercial": (
+            "Open-Meteo permite uso gratuito solo NO COMERCIAL, lo que incluye "
+            "publicidad y patrocinios. eBird y GBIF requieren permiso para uso "
+            "comercial. Monetizar este proyecto de cualquier forma exige "
+            "revisar esas tres licencias primero."
+        ),
+        "cita_incompleta": (
+            "La cita de GBIF está incompleta y conviene decirlo: se usó la API "
+            "de búsqueda con facetas, que devuelve recuentos y no registros, "
+            "así que GBIF no emite DOI. Una cita formal exige la API de "
+            "descargas, que da un DOI citable con la lista exacta de datasets y "
+            "publicadores."
+        ),
+    }
+
+
+@app.get("/patterns/nulls", summary="Lo que se buscó y no está")
+def null_findings() -> dict:
+    from appclima.null_findings import NULL_FINDINGS
+
+    return {
+        "findings": [n.model_dump() for n in NULL_FINDINGS],
+        "por_que_publicarlos": (
+            "Publicar los nulos no es humildad decorativa: demuestra que las "
+            "afirmaciones que SÍ se hacen pasaron por el mismo filtro. Cada "
+            "entrada exige la afirmación contrastada, el estadístico con su n y "
+            "su umbral, por qué es un nulo y no falta de datos, y qué se "
+            "aprende — que casi siempre es más que del hallazgo."
+        ),
+        "de_donde_salen": (
+            "Muchos vienen de verificación adversarial: un agente encontraba "
+            "señal y otro, con el mandato explícito de refutarla, la "
+            "desmontaba. Tres hipótesis que parecían tener señal perdieron "
+            "entre el 30% y el 45% de su mejora declarada, y ninguna cayó por "
+            "fuga de datos — cayeron por medir en el punto donde mejor se veían."
+        ),
+    }
