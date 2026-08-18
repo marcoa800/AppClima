@@ -1,0 +1,90 @@
+name: Publicar sitio estático
+
+# Publica la web como sitio ESTÁTICO, sin servidor de API.
+#
+# El payload completo son 5,6 MB de JSON, así que cabe en cualquier hosting
+# estático gratuito. Frente a desplegar FastAPI: 0 € en vez de 5-20 €/mes, sin
+# rate limiting, sin caídas posibles y servido desde CDN.
+#
+# No rompe la arquitectura: los JSON estáticos SON el contrato de la API,
+# materializado. FastAPI se queda para desarrollo local y para el cliente de iOS,
+# que sí necesita consultas con parámetros.
+
+on:
+  # Tras cada ingesta correcta: el sitio se republica con los datos frescos.
+  workflow_run:
+    workflows: ['Ingesta diaria']
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ['web/**', 'src/appclima/api/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # Si la ingesta falló, no republicar: mejor datos de ayer que datos rotos.
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # El warehouse viene de R2, construido por el workflow de ingesta. Sin R2
+      # habría que reingerir aquí, que gastaría cuota de Open-Meteo por nada.
+      - name: Recuperar warehouse desde R2
+        if: env.R2_BUCKET != ''
+        run: aws s3 cp "s3://$R2_BUCKET/appclima.duckdb" data/appclima.duckdb
+
+      - name: Reconstruir warehouse (si no hay R2)
+        if: env.R2_BUCKET == ''
+        run: |
+          uv run appclima ingest all --cadence full
+          uv run appclima build
+
+      - name: Exportar la API a JSON estático
+        run: uv run appclima export --out web/public/api
+
+      - name: Construir la web
+        run: npm ci && npm run build
+        working-directory: web
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

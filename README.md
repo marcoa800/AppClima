@@ -31,6 +31,32 @@ npm install --prefix web && npm run dev --prefix web
 
 La web queda en `localhost:5173` y la API en `localhost:8000/docs`.
 
+### Publicar sin servidor
+
+```bash
+.venv/bin/appclima export && npm run build --prefix web
+```
+
+La web pública **no necesita servidor**. El payload completo son 5,6 MB de JSON,
+así que cabe en cualquier hosting estático gratuito:
+
+| | Con servidor | Estático |
+|---|---|---|
+| Coste | 5-20 €/mes | **0 €** |
+| Rate limiting | Necesario | No existe el problema |
+| Caída del servicio | Posible | Imposible |
+| Latencia | Consulta a DuckDB | CDN |
+
+Y no rompe la arquitectura: **los JSON estáticos son el contrato de la API,
+materializado**. FastAPI se queda para desarrollo local y para el cliente de iOS,
+que sí necesita consultas con parámetros. El cliente web funciona contra los dos
+con el mismo código, según `VITE_API_STATIC`.
+
+La exportación es **reproducible byte a byte**, y hay un test que lo verifica.
+Sin eso el workflow de Pages generaría un diff en cada ejecución aunque nada
+hubiera cambiado: Sídney y Manaos tienen 89 especies cada una y se
+intercambiaban de sitio porque el `ORDER BY` no desempataba.
+
 ## Arquitectura
 
 ```
@@ -87,6 +113,7 @@ de datos.
 .venv/bin/appclima ingest enso                  # índice ONI de El Niño
 .venv/bin/appclima ingest events                # hitos históricos y de datos
 .venv/bin/appclima build                        # reconstruye silver y gold
+.venv/bin/appclima export                       # API → JSON estático (5,6 MB)
 ```
 
 ## Fuentes
@@ -349,7 +376,7 @@ Anotadas porque son las que no se ven en el código y volverían a morder:
 .venv/bin/pytest -q
 ```
 
-216 tests, sin red. Cubren el parseo de las tres fuentes con nulls y formatos
+223 tests, sin red. Cubren el parseo de las tres fuentes con nulls y formatos
 raros, el macro haversine contra distancias conocidas (incluido el cruce del
 antimeridiano), la distancia circular entre días del año, y la coherencia del
 catálogo.

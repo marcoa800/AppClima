@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated, Any
 
 import typer
@@ -574,6 +575,40 @@ def ingest_all(
     if fallos:
         console.print(f"[red]{fallos} fuente(s) fallaron[/red]")
         raise typer.Exit(code=1)
+
+
+@app.command()
+def export(
+    out: Annotated[
+        Path,
+        typer.Option(help="Carpeta de salida. Se crea si no existe."),
+    ] = Path("web/public/api"),
+    verbose: bool = False,
+) -> None:
+    """Exporta toda la API como ficheros JSON estáticos.
+
+    El payload completo son ~9 MB, así que cabe en cualquier hosting estático
+    gratuito. Con esto la web pública no necesita servidor: sin coste, sin rate
+    limiting, sin caídas y servido desde CDN.
+
+    FastAPI se queda para desarrollo local y para el cliente de iOS, que sí
+    necesita consultas con parámetros.
+    """
+    _setup_logging(verbose)
+
+    from appclima.api.export import export_static
+
+    result = export_static(out)
+
+    console.print(
+        f"[green]✓[/green] {result['written']} rutas en {result['out_dir']} "
+        f"({result['total_bytes'] / 1_048_576:.1f} MB)"
+    )
+    if result["skipped"]:
+        console.print(
+            f"[dim]  {result['skipped']} rutas omitidas (404 esperado: la "
+            "climatología solo existe en las 12 ciudades flagship)[/dim]"
+        )
 
 
 @app.command()

@@ -1,12 +1,41 @@
-/** Cliente de la API propia. Ningún componente llama a fetch directamente. */
+/** Cliente de la API propia. Ningún componente llama a fetch directamente.
+ *
+ * Funciona contra DOS backends con el mismo código:
+ *
+ *   desarrollo   proxy de Vite → FastAPI en :8000, con query strings
+ *   producción   ficheros JSON estáticos, sin servidor
+ *
+ * La web pública no necesita servidor: el payload completo son 5,6 MB y cabe en
+ * cualquier hosting estático gratuito. Sin coste, sin rate limiting, sin caídas
+ * y servido desde CDN. FastAPI se queda para desarrollo y para el cliente de
+ * iOS, que sí necesita consultas con parámetros.
+ *
+ * Por eso cada método pasa la ruta y los parámetros POR SEPARADO: en modo
+ * estático los parámetros se ignoran (ya vienen fijados en el fichero) y en
+ * modo servidor se serializan como query string.
+ */
 
-const BASE = '/api'
+const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/api'
+const STATIC = import.meta.env.VITE_API_STATIC === 'true'
 
-async function get<T>(path: string): Promise<T> {
-  const response = await fetch(`${BASE}${path}`)
+type Params = Record<string, string | number | undefined>
+
+async function get<T>(path: string, params?: Params): Promise<T> {
+  let url: string
+  if (STATIC) {
+    url = `${BASE}${path}.json`
+  } else {
+    const entries = Object.entries(params ?? {}).filter(([, v]) => v !== undefined)
+    const qs = entries.length
+      ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}`
+      : ''
+    url = `${BASE}${path}${qs}`
+  }
+
+  const response = await fetch(url)
   if (!response.ok) {
     const detail = await response.text().catch(() => '')
-    throw new Error(`${response.status} en ${path}${detail ? `: ${detail}` : ''}`)
+    throw new Error(`${response.status} en ${url}${detail ? `: ${detail}` : ''}`)
   }
   return response.json() as Promise<T>
 }
@@ -226,9 +255,7 @@ export const api = {
     get<{ status: string; freshness: Record<string, string | null> }>('/health'),
   locations: () => get<Location[]>('/locations'),
   anomaly: (id: string, start?: string) =>
-    get<Anomaly[]>(
-      `/weather/${id}/anomaly?limit=5000${start ? `&start=${start}` : ''}`,
-    ),
+    get<Anomaly[]>(`/weather/${id}/anomaly`, { limit: 5000, start }),
   climatology: (id: string) => get<ClimatologyDay[]>(`/climatology/${id}`),
   warming: () =>
     get<{ by_year: WarmingYear[]; note: string }>('/patterns/warming'),
@@ -246,11 +273,11 @@ export const api = {
     ),
   deadliest: () =>
     get<{ events: DeadliestEvent[]; finding: string; caveat: string }>(
-      '/patterns/deadliest?limit=26',
+      '/patterns/deadliest', { limit: 26 },
     ),
   cascades: () =>
     get<{ cascades: Cascade[]; finding: string }>(
-      '/disasters/cascades?min_deaths=1000&limit=12',
+      '/disasters/cascades', { min_deaths: 1000, limit: 12 },
     ),
   byCentury: () =>
     get<{ by_century: CenturyRow[]; warning: string }>('/disasters/by-century'),
@@ -273,5 +300,5 @@ export const api = {
       por_que_la_mediana: string
     }>('/models/skill'),
   quakes: (near: string) =>
-    get<Quake[]>(`/quakes?near=${near}&min_magnitude=4.5&limit=50`),
+    get<Quake[]>('/quakes', { near, min_magnitude: 4.5, limit: 50 }),
 }

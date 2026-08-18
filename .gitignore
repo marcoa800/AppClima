@@ -23,6 +23,11 @@ node_modules/
 web/dist/
 web/.vite/
 
+# API exportada a JSON estático. Es salida del pipeline: la regenera
+# `appclima export` desde el warehouse, y el workflow de Pages la produce en
+# cada despliegue. 5,6 MB que no aportan nada versionados.
+web/public/api/
+
 # Snapshot generado de las gráficas. Es salida del pipeline, no fuente: lo
 # produce scratchpad/build_snapshot.py a partir de la web en marcha, y queda
 # obsoleto en cuanto cambian los datos. 172 KB que se regeneran en un comando.

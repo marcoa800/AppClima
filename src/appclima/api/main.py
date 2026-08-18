@@ -9,6 +9,13 @@ Convenciones aplicadas en todos los endpoints:
     `limit=1000000` es una denegación de servicio esperando a ocurrir.
   - Nada de SQL construido por concatenación de parámetros. Todo va por
     parámetros enlazados de DuckDB.
+  - **Todo ORDER BY termina en una columna que desempata de forma única.** Sin
+    eso el orden de las filas empatadas es arbitrario y cambia entre
+    ejecuciones: Sídney y Manaos tienen 89 especies cada una, y se
+    intercambiaban de sitio en cada llamada. Da igual mientras la API se
+    consulte en vivo, pero la exportación estática se publica desde CI y
+    generaría un diff en cada ejecución aunque los datos no hubieran cambiado —
+    haciendo imposible distinguir un cambio real del ruido.
 """
 
 from __future__ import annotations
@@ -279,7 +286,7 @@ def gutenberg_richter() -> dict:
         """),
         "b_values": _query("""
             SELECT scope, n_events, mag_mean, mag_max, b_value, b_std_error, a_value
-            FROM gold_quake_b_value ORDER BY n_events DESC
+            FROM gold_quake_b_value ORDER BY n_events DESC, scope
         """),
         "note": (
             "log10(N) = a - b·M. La magnitud de completitud es 4.5: por debajo "
@@ -307,7 +314,7 @@ def omori(min_sequence: Annotated[int, Query(ge=1, le=1000)] = 20) -> dict:
                    mainshock_time, sequence_total
             FROM gold_quake_sequences
             WHERE sequence_total >= ?
-            ORDER BY sequence_total DESC LIMIT 20
+            ORDER BY sequence_total DESC, mainshock_id LIMIT 20
             """,
             [min_sequence],
         ),
@@ -325,7 +332,7 @@ def seismic_weather_myth() -> dict:
             SELECT location_id, n_days, total_quakes, pct_days_with_quake,
                    r_pressure, r_temperature, r_significance_threshold,
                    pressure_significant, pct_variance_explained
-            FROM gold_quake_pressure_test ORDER BY total_quakes DESC
+            FROM gold_quake_pressure_test ORDER BY total_quakes DESC, location_id
         """),
         "interpretation": (
             "No hay relación práctica. Con n=87.654 días el umbral de "
@@ -377,7 +384,7 @@ def birds_summary() -> dict:
         FROM gold_bird_daily b
         JOIN dim_locations l ON l.id = b.location_id
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
-        ORDER BY species_richness DESC
+        ORDER BY species_richness DESC, b.location_id
     """)
 
     correlations = _query("""
@@ -470,7 +477,7 @@ def disasters(
                    generated_tsunami, tsunami_wave_m
             FROM gold_disasters_ranked
             WHERE {" AND ".join(conditions)}
-            ORDER BY deaths DESC
+            ORDER BY deaths DESC, hazard_type, source_id
             LIMIT ?
             """,
             params,
@@ -497,7 +504,7 @@ def disaster_cascades(
                    round(100.0 * deaths_from_cascade / deaths, 1) AS pct_from_cascade
             FROM gold_disasters_ranked
             WHERE deaths_from_cascade > 0 AND deaths >= ?
-            ORDER BY deaths_from_cascade DESC
+            ORDER BY deaths_from_cascade DESC, year, location_name
             LIMIT ?
             """,
             [min_deaths, limit],
@@ -542,7 +549,7 @@ def epidemics() -> dict:
                    deaths_uncertainty_ratio, regions, estimate_confidence,
                    source, note, century
             FROM silver_epidemics
-            ORDER BY coalesce(deaths_mid, 0) DESC
+            ORDER BY coalesce(deaths_mid, 0) DESC, id
         """),
         "provenance": (
             "Catálogo CURADO, no una API. No existe fuente abierta con datos "
@@ -569,7 +576,7 @@ def deadliest(limit: Annotated[int, Query(ge=1, le=200)] = 30) -> dict:
                    deaths_representative, deaths_uncertainty_ratio,
                    estimate_confidence, estimate_kind
             FROM gold_epidemics_vs_disasters
-            ORDER BY deaths_representative DESC
+            ORDER BY deaths_representative DESC, event_key
             LIMIT ?
             """,
             [limit],
@@ -619,7 +626,7 @@ def cyclones(
                    peak_lat, peak_lon, peak_time
             FROM gold_cyclones
             WHERE {" AND ".join(conditions)}
-            ORDER BY max_wind_kt DESC NULLS LAST, min_pressure_mb ASC
+            ORDER BY max_wind_kt DESC NULLS LAST, min_pressure_mb ASC, sid
             LIMIT ?
             """,
             params,
@@ -749,7 +756,7 @@ def per_capita(limit: Annotated[int, Query(ge=1, le=200)] = 25) -> dict:
                    pct_of_humanity, deaths_per_million_low, deaths_per_million_high,
                    estimate_kind, population_source
             FROM gold_catastrophes_per_capita
-            ORDER BY deaths_per_million DESC
+            ORDER BY deaths_per_million DESC, event_key
             LIMIT ?
             """,
             [limit],
@@ -808,14 +815,14 @@ def heatwave_model() -> dict:
                    p_extreme, base_rate, lift
             FROM gold_heatwave_model
             WHERE n_train >= 100
-            ORDER BY p_extreme DESC
+            ORDER BY p_extreme DESC, anomaly_bucket, enso_bucket
         """),
         "backtest": _query("""
             SELECT scope, n_test, n_extreme, observed_rate, brier_model,
                    brier_base, brier_skill_score, pct_improvement,
                    beats_climatology
             FROM gold_heatwave_backtest
-            ORDER BY (scope = 'GLOBAL') DESC, brier_skill_score DESC
+            ORDER BY (scope = 'GLOBAL') DESC, brier_skill_score DESC, scope
         """),
         "design": (
             "Entrenamiento 2006-2018, prueba 2019-2025. Partición POR TIEMPO, "
@@ -895,7 +902,7 @@ def model_skill() -> dict:
                    improvement_median, improvement_min, improvement_max,
                    should_display
             FROM gold_model_skill
-            ORDER BY improvement_median DESC
+            ORDER BY improvement_median DESC, model_id, scope
         """),
         "by_cut": _query("""
             SELECT model_id, cut_year, n_test, value_model, value_baseline,
@@ -955,7 +962,7 @@ def aftershock_forecast(
                    round(1.85 * (SELECT a FROM alpha) * f.n1, 0) AS predicted_high
             FROM gold_aftershock_forecast f
             WHERE f.is_predictable
-            ORDER BY f.mainshock_time DESC
+            ORDER BY f.mainshock_time DESC, f.mainshock_id
             LIMIT ?
             """,
             [limit],
@@ -1009,7 +1016,7 @@ def panel_coverage(
                    naive_underestimates_by, analyzable, verdict
             FROM gold_panel_coverage
             {where}
-            ORDER BY panel, n_effective DESC
+            ORDER BY panel, n_effective DESC, column_name
             """,
             params,
         ),
