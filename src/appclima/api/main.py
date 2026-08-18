@@ -978,3 +978,130 @@ def aftershock_forecast(
             "real, a t+24 h, USGS aún no ha revisado casi nada y n1 será menor.",
         ],
     }
+
+
+# ─── Paneles y su metadatos de cobertura ─────────────────────────────────────
+#
+# Estos tres endpoints van juntos a propósito. El panel sin su cobertura invita
+# al error que una verificación adversarial midió: de 153 pares de columnas del
+# panel mensual, 77 superaban el umbral ingenuo y solo 6 sobrevivían a corregir
+# por autocorrelación, estacionalidad, tendencia y ventana. Un 92% de mortalidad.
+
+
+@app.get("/panels/coverage", summary="Qué columna se puede analizar y con qué umbral")
+def panel_coverage(
+    panel: Annotated[
+        str | None, Query(pattern="^(gold_year_panel|gold_month_panel)$")
+    ] = None,
+) -> dict:
+    conditions: list[str] = []
+    params: list[Any] = []
+    if panel:
+        conditions.append("panel = ?")
+        params.append(panel)
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+    return {
+        "columns": _query(
+            f"""
+            SELECT panel, column_name, first_year, last_year, n_observations,
+                   acf1, n_effective, r_threshold_naive, r_threshold_honest,
+                   naive_underestimates_by, analyzable, verdict
+            FROM gold_panel_coverage
+            {where}
+            ORDER BY panel, n_effective DESC
+            """,
+            params,
+        ),
+        "como_usarlo": (
+            "Antes de correlacionar dos columnas, mira el `r_threshold_honest` "
+            "de AMBAS y quédate con el mayor. El `r_threshold_naive` está "
+            "expuesto solo para que se vea la diferencia: para el ONI mensual "
+            "es 0,065 frente a un umbral honesto de 0,377, un factor de 5,8."
+        ),
+        "por_que": (
+            "1,96/√n es válido para observaciones independientes, y las series "
+            "temporales no lo son. El ONI mensual tiene ACF(1) = 0,97, así que "
+            "sus 918 observaciones equivalen a unas 27 independientes. "
+            "`world_population` es el caso extremo: ACF(1) = 1 exacto y umbral "
+            "honesto por encima de 1, o sea que ninguna correlación contra ella "
+            "puede significar nada."
+        ),
+    }
+
+
+@app.get("/panels/year", summary="Panel anual, una fila por año")
+def year_panel(
+    from_year: int = 1900,
+    to_year: int = 2026,
+    regime: Annotated[int | None, Query(description="coverage_regime homogéneo")] = None,
+) -> dict:
+    conditions = ["year BETWEEN ? AND ?"]
+    params: list[Any] = [from_year, to_year]
+    if regime is not None:
+        conditions.append("coverage_regime = ?")
+        params.append(regime)
+
+    return {
+        "rows": _query(
+            f"""
+            SELECT * FROM gold_year_panel
+            WHERE {" AND ".join(conditions)}
+            ORDER BY year
+            """,
+            params,
+        ),
+        "regimes": _query("""
+            SELECT coverage_regime, min(year) AS first_year, max(year) AS last_year,
+                   count(*) AS years, max(sources_available) AS sources
+            FROM gold_year_panel GROUP BY 1 ORDER BY 1
+        """),
+        "aviso": (
+            "Filtra por `regime` para restringir a cobertura homogénea. Una "
+            "correlación sobre el rango completo mezcla años con 3 fuentes y "
+            "años con 7, y la señal más fuerte del panel no es climática: es "
+            "r(sources_available, año) = +0,903."
+        ),
+    }
+
+
+@app.get("/panels/month", summary="Panel mensual, para ciclos y desfases")
+def month_panel(
+    from_year: int = 1950,
+    to_year: int = 2026,
+) -> dict:
+    return {
+        "rows": _query(
+            """
+            SELECT * FROM gold_month_panel
+            WHERE year BETWEEN ? AND ?
+            ORDER BY year, month
+            """,
+            [from_year, to_year],
+        ),
+        "usa_deseason": (
+            "Para correlacionar usa SIEMPRE las columnas `_deseason`. A "
+            "resolución mensual el ciclo anual domina todo: el ACE ciclónico va "
+            "de 26 en mayo a 155 en septiembre, factor 6. Correlacionar series "
+            "crudas mide sobre todo que ambas tienen verano. "
+            "`temp_anomaly_mean` ya viene desestacionalizada por construcción."
+        ),
+        "cuidado_con_bird_records": (
+            "**bird_records no mide aves, mide adopción de eBird.** Crece de "
+            "32.300 registros en 2015 a 300.587 en 2024, factor 9,3 en diez "
+            "años, y correlaciona con cualquier serie creciente. Su pareja con "
+            "pct_extreme_heat_days da r = +0,676 que cae a +0,284 al "
+            "destendenciar; con temp_anomaly_mean pasa de +0,378 a −0,110, o "
+            "sea que CAMBIA DE SIGNO. Con ACF(1) = 0,91 su umbral honesto es "
+            "0,336, más del triple del ingenuo."
+        ),
+        "no_es_mas_potente_que_el_anual": (
+            "Se construyó esperando 12× de potencia y no la da. La correlación "
+            "ONI×ciclones sobrevive en el panel anual (r = +0,709, q < 0,05) y "
+            "MUERE en el mensual (r = +0,189, q = 0,44). El ACE mensual está "
+            "dominado por ruido meteorológico que el ONI no explica. La "
+            "agregación a temporada es el análisis, no una pérdida. Lo que el "
+            "panel mensual sí compra es la capacidad de PREGUNTAR: el espectro "
+            "del ENSO no existe sin resolución intraanual."
+        ),
+    }

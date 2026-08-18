@@ -18,7 +18,7 @@ uv venv --python 3.12 && uv pip install -e ".[dev]"
 ```
 
 ```bash
-.venv/bin/appclima ingest all && .venv/bin/appclima build
+.venv/bin/appclima ingest all --cadence full && .venv/bin/appclima build
 ```
 
 ```bash
@@ -75,7 +75,9 @@ de datos.
 ```bash
 .venv/bin/appclima locations                    # catálogo de ubicaciones
 .venv/bin/appclima status                       # qué hay en bronze
-.venv/bin/appclima ingest all                   # las tres fuentes
+.venv/bin/appclima ingest all                   # cadencia diaria (3 fuentes)
+.venv/bin/appclima ingest all --cadence weekly  # + ciclones
+.venv/bin/appclima ingest all --cadence full    # las 11 fuentes
 .venv/bin/appclima ingest quakes --days-back 30 --min-magnitude 2.5
 .venv/bin/appclima ingest weather-archive --flagships --start 2006-01-01 --end 2025-12-31
 .venv/bin/appclima ingest disasters             # 10.722 eventos históricos de NOAA
@@ -133,6 +135,28 @@ Con topes de ~600/minuto, ~5.000/hora y ~10.000/día. Consecuencias reales:
   `CORE_VARIABLES` (5 variables en vez de 14 para el histórico).
 - `appclima ingest weather-archive` estima el peso y aborta antes de gastar
   cuota si va a chocar.
+
+### Cadencias de ingesta
+
+No todas las fuentes cambian al mismo ritmo, y tratarlas igual es un desperdicio
+o un olvido. El pronóstico caduca en horas; el catálogo sísmico histórico de NOAA
+no ha cambiado en años; el Banco Mundial publica una vez al año.
+
+| Cadencia | Añade | Cron |
+|---|---|---|
+| `daily` | clima, sismos, aves | 06:15 UTC |
+| `weekly` | + ciclones (IBTrACS publica por lotes) | domingos |
+| `monthly` | + índice ONI | día 1 |
+| `yearly` | + población, desastres, fenología, curados | 1 de enero |
+
+Cada nivel incluye a los anteriores. El workflow deduce la cadencia de la fecha
+—no del cron que disparó, porque GitHub no lo dice— y elige siempre la más
+amplia que aplique ese día.
+
+Esto se arregló tarde: `ingest all` se quedó cubriendo solo las tres fuentes de
+la fase 1 mientras el proyecto crecía a once, así que el cron diario refrescaba
+tres y dejaba envejecer ocho **en silencio**. El `/health` no lo detectaba porque
+solo vigila la frescura de cuatro datasets.
 
 ### Token de eBird
 
