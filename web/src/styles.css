@@ -1,0 +1,344 @@
+/* Tokens de la paleta de referencia de visualización de datos.
+ *
+ * Los valores oscuros están DEFINIDOS, no derivados: no son un flip automático
+ * de los claros, sino los mismos tonos re-escalonados para la superficie
+ * oscura. Un invert automático rompe el contraste y la separación entre series.
+ *
+ * Los colores de las gráficas se validaron con el script del skill de dataviz.
+ * Descarte importante: naranja #eb6834 y rojo #e34948 juntos fallan el suelo de
+ * visión normal (ΔE 7,1), así que la pareja divergente es azul↔rojo.
+ */
+
+:root {
+  color-scheme: light;
+
+  --surface-1: #fcfcfb;
+  --page: #f9f9f7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --baseline: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+
+  /* Polos divergentes: frío / calor */
+  --cold: #2a78d6;
+  --hot: #e34948;
+  --neutral: #f0efec;
+
+  /* Categórica, orden documentado */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+
+  /* Estado */
+  --good: #0ca30c;
+  --warning: #fab219;
+  --critical: #d03b3b;
+
+  --radius: 10px;
+  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+
+    --cold: #3987e5;
+    --hot: #e66767;
+    --neutral: #383835;
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface-1: #1a1a19;
+  --page: #0d0d0d;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --gridline: #2c2c2a;
+  --baseline: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+
+  --cold: #3987e5;
+  --hot: #e66767;
+  --neutral: #383835;
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+header.masthead {
+  margin-bottom: 28px;
+}
+header.masthead h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+header.masthead p {
+  margin: 0;
+  color: var(--text-secondary);
+  max-width: 68ch;
+}
+
+/* Fila de filtros: siempre encima de las gráficas, en una sola línea. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  padding: 14px 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.filters label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+select {
+  font-family: var(--font);
+  font-size: 14px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+/* Tarjetas de estadística */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 26px;
+}
+.tile {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+.tile .label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.tile .value {
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.tile .sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 5px;
+}
+
+/* Tarjeta de gráfica */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px 16px;
+  margin-bottom: 22px;
+}
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  letter-spacing: -0.005em;
+}
+.card .note {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  max-width: 78ch;
+}
+.card .caveat {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  max-width: 78ch;
+  padding-top: 12px;
+  border-top: 1px solid var(--gridline);
+}
+
+/* Leyenda: presente siempre con 2+ series, para que la identidad no dependa
+ * solo del color. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.legend .item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.legend .swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.legend .swatch.line {
+  height: 2px;
+  border-radius: 1px;
+  width: 16px;
+}
+
+/* Contenedor con scroll propio: el body nunca hace scroll horizontal. */
+.chart-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+svg.chart {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+svg.chart text {
+  font-family: var(--font);
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+svg.chart .axis-line {
+  stroke: var(--baseline);
+  stroke-width: 1;
+}
+svg.chart .grid {
+  stroke: var(--gridline);
+  stroke-width: 1;
+}
+svg.chart .tick-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tooltip */
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 50;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+  max-width: 240px;
+}
+.tooltip .tt-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+.tooltip .tt-row {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tabla — la forma correcta cuando hay muchas clases con significado. */
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+table.data th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 9px 12px 9px 0;
+  border-bottom: 1px solid var(--baseline);
+  white-space: nowrap;
+}
+table.data td {
+  padding: 9px 12px 9px 0;
+  border-bottom: 1px solid var(--gridline);
+  font-variant-numeric: tabular-nums;
+}
+table.data td.num,
+table.data th.num {
+  text-align: right;
+}
+table.data tr.pooled {
+  font-weight: 600;
+}
+table.data tr.pooled td {
+  color: var(--text-primary);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.loading,
+.error {
+  padding: 40px 0;
+  color: var(--text-secondary);
+}
+.error {
+  color: var(--critical);
+}
+
+footer.credits {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--gridline);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+footer.credits a {
+  color: var(--text-secondary);
+}

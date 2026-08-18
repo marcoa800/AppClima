@@ -1,0 +1,272 @@
+"""Catálogo de ciudades ancla.
+
+Aquí está la decisión de diseño más importante del proyecto: **"global" no
+significa el planeta entero en resolución horaria**. Eso son terabytes y una
+factura de nube. Significa una muestra deliberada.
+
+Estas ubicaciones están elegidas para cubrir:
+
+  - Todo el rango de latitud, de 71°N (Utqiagvik) a 54°S (Ushuaia)
+  - Los grandes grupos climáticos de Köppen, incluidos extremos: desierto
+    cálido (Kuwait), continental subárctico (Yakutsk), tropical húmedo (Manaos)
+  - Zonas sísmicas de riesgo alto y de riesgo nulo, para poder contrastar
+  - Las principales rutas migratorias de aves del mundo
+
+Los eventos globales y en vivo (sismos, incendios) NO se limitan a esta lista:
+son ligeros y se ingieren para todo el planeta. Esta muestra existe solo para
+el análisis climático profundo, que es el caro.
+
+Cada campo de aquí es una dimensión con la que después se puede agrupar. El
+`flyway` es el que hace posible la pregunta interesante: ¿se comporta igual la
+migración en la ruta del Atlántico Este que en la de Asia Oriental?
+"""
+
+from __future__ import annotations
+
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+# Rutas migratorias principales reconocidas internacionalmente.
+Flyway = Literal[
+    "atlantico-este",
+    "mediterraneo-mar-negro",
+    "africa-oriental-asia-occidental",
+    "asia-central",
+    "asia-oriental-australasia",
+    "americas-pacifico",
+    "americas-central",
+    "americas-misisipi",
+    "americas-atlantico",
+    "ninguna",
+]
+
+
+class Location(BaseModel):
+    """Una ubicación ancla del catálogo."""
+
+    id: str = Field(description="Slug estable. Nunca cambiar: es clave de join.")
+    name: str
+    country: str
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    timezone: str = Field(
+        description="Zona IANA. Imprescindible para agregar por día LOCAL: "
+                    "agrupar Tokio (UTC+9) por día UTC parte su jornada en dos."
+    )
+    koppen: str = Field(description="Clasificación climática de Köppen-Geiger")
+    seismic_level: int = Field(
+        ge=0, le=3, description="0 nulo · 1 bajo · 2 alto · 3 muy alto (orientativo)"
+    )
+    flyway: Flyway
+
+
+# Coordenadas redondeadas a 2 decimales (~1 km), suficiente para la celda de
+# malla meteorológica. El nivel sísmico es orientativo, basado en proximidad a
+# límites de placa: sirve para agrupar, no para evaluar riesgo real.
+LOCATIONS: list[Location] = [
+    # ── Ártico y subártico ────────────────────────────────────────────────
+    Location(id="utqiagvik", name="Utqiagvik", country="US", lat=71.29, lon=-156.79,
+             timezone="America/Anchorage",
+             koppen="ET", seismic_level=1, flyway="americas-pacifico"),
+    Location(id="tromso", name="Tromsø", country="NO", lat=69.65, lon=18.96,
+             timezone="Europe/Oslo",
+             koppen="Dfc", seismic_level=1, flyway="atlantico-este"),
+    Location(id="yakutsk", name="Yakutsk", country="RU", lat=62.03, lon=129.73,
+             timezone="Asia/Yakutsk",
+             koppen="Dfd", seismic_level=1, flyway="asia-oriental-australasia"),
+    Location(id="reykjavik", name="Reikiavik", country="IS", lat=64.15, lon=-21.94,
+             timezone="Atlantic/Reykjavik",
+             koppen="Cfc", seismic_level=3, flyway="atlantico-este"),
+    Location(id="anchorage", name="Anchorage", country="US", lat=61.22, lon=-149.90,
+             timezone="America/Anchorage",
+             koppen="Dfc", seismic_level=3, flyway="americas-pacifico"),
+
+    # ── Europa ────────────────────────────────────────────────────────────
+    Location(id="london", name="Londres", country="GB", lat=51.51, lon=-0.13,
+             timezone="Europe/London",
+             koppen="Cfb", seismic_level=0, flyway="atlantico-este"),
+    Location(id="berlin", name="Berlín", country="DE", lat=52.52, lon=13.40,
+             timezone="Europe/Berlin",
+             koppen="Cfb", seismic_level=0, flyway="atlantico-este"),
+    Location(id="moscow", name="Moscú", country="RU", lat=55.76, lon=37.62,
+             timezone="Europe/Moscow",
+             koppen="Dfb", seismic_level=0, flyway="mediterraneo-mar-negro"),
+    Location(id="madrid", name="Madrid", country="ES", lat=40.42, lon=-3.70,
+             timezone="Europe/Madrid",
+             koppen="Csa", seismic_level=1, flyway="atlantico-este"),
+    Location(id="barcelona", name="Barcelona", country="ES", lat=41.39, lon=2.17,
+             timezone="Europe/Madrid",
+             koppen="Csa", seismic_level=1, flyway="mediterraneo-mar-negro"),
+    Location(id="athens", name="Atenas", country="GR", lat=37.98, lon=23.73,
+             timezone="Europe/Athens",
+             koppen="Csa", seismic_level=3, flyway="mediterraneo-mar-negro"),
+    Location(id="istanbul", name="Estambul", country="TR", lat=41.01, lon=28.98,
+             timezone="Europe/Istanbul",
+             koppen="Csa", seismic_level=3, flyway="mediterraneo-mar-negro"),
+
+    # ── Norteamérica ──────────────────────────────────────────────────────
+    Location(id="vancouver", name="Vancouver", country="CA", lat=49.28, lon=-123.12,
+             timezone="America/Vancouver",
+             koppen="Csb", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="san-francisco", name="San Francisco", country="US", lat=37.77, lon=-122.42,
+             timezone="America/Los_Angeles",
+             koppen="Csb", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="denver", name="Denver", country="US", lat=39.74, lon=-104.99,
+             timezone="America/Denver",
+             koppen="BSk", seismic_level=1, flyway="americas-central"),
+    Location(id="phoenix", name="Phoenix", country="US", lat=33.45, lon=-112.07,
+             timezone="America/Phoenix",
+             koppen="BWh", seismic_level=1, flyway="americas-pacifico"),
+    Location(id="chicago", name="Chicago", country="US", lat=41.88, lon=-87.63,
+             timezone="America/Chicago",
+             koppen="Dfa", seismic_level=0, flyway="americas-misisipi"),
+    Location(id="new-york", name="Nueva York", country="US", lat=40.71, lon=-74.01,
+             timezone="America/New_York",
+             koppen="Cfa", seismic_level=0, flyway="americas-atlantico"),
+    Location(id="mexico-city", name="Ciudad de México", country="MX", lat=19.43, lon=-99.13,
+             timezone="America/Mexico_City",
+             koppen="Cwb", seismic_level=3, flyway="americas-central"),
+
+    # ── Centroamérica, Caribe y Andes ─────────────────────────────────────
+    Location(id="san-jose-cr", name="San José", country="CR", lat=9.93, lon=-84.08,
+             timezone="America/Costa_Rica",
+             koppen="Aw", seismic_level=3, flyway="americas-central"),
+    Location(id="bogota", name="Bogotá", country="CO", lat=4.71, lon=-74.07,
+             timezone="America/Bogota",
+             koppen="Cfb", seismic_level=2, flyway="americas-central"),
+    Location(id="quito", name="Quito", country="EC", lat=-0.18, lon=-78.47,
+             timezone="America/Guayaquil",
+             koppen="Cfb", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="lima", name="Lima", country="PE", lat=-12.05, lon=-77.04,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="la-paz", name="La Paz", country="BO", lat=-16.50, lon=-68.15,
+             timezone="America/La_Paz",
+             koppen="Cwc", seismic_level=2, flyway="americas-pacifico"),
+
+    # ── Sudamérica ────────────────────────────────────────────────────────
+    Location(id="manaus", name="Manaos", country="BR", lat=-3.12, lon=-60.02,
+             timezone="America/Manaus",
+             koppen="Af", seismic_level=0, flyway="americas-atlantico"),
+    Location(id="sao-paulo", name="São Paulo", country="BR", lat=-23.55, lon=-46.63,
+             timezone="America/Sao_Paulo",
+             koppen="Cfa", seismic_level=0, flyway="americas-atlantico"),
+    Location(id="buenos-aires", name="Buenos Aires", country="AR", lat=-34.60, lon=-58.38,
+             timezone="America/Argentina/Buenos_Aires",
+             koppen="Cfa", seismic_level=0, flyway="americas-atlantico"),
+    Location(id="santiago", name="Santiago", country="CL", lat=-33.45, lon=-70.67,
+             timezone="America/Santiago",
+             koppen="Csb", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="ushuaia", name="Ushuaia", country="AR", lat=-54.80, lon=-68.30,
+             timezone="America/Argentina/Ushuaia",
+             koppen="Cfc", seismic_level=2, flyway="americas-pacifico"),
+
+    # ── África y Oriente Medio ────────────────────────────────────────────
+    Location(id="marrakech", name="Marrakech", country="MA", lat=31.63, lon=-7.99,
+             timezone="Africa/Casablanca",
+             koppen="BSh", seismic_level=2, flyway="atlantico-este"),
+    Location(id="cairo", name="El Cairo", country="EG", lat=30.04, lon=31.24,
+             timezone="Africa/Cairo",
+             koppen="BWh", seismic_level=2, flyway="africa-oriental-asia-occidental"),
+    Location(id="lagos", name="Lagos", country="NG", lat=6.52, lon=3.38,
+             timezone="Africa/Lagos",
+             koppen="Aw", seismic_level=0, flyway="atlantico-este"),
+    Location(id="nairobi", name="Nairobi", country="KE", lat=-1.29, lon=36.82,
+             timezone="Africa/Nairobi",
+             koppen="Cwb", seismic_level=2, flyway="africa-oriental-asia-occidental"),
+    Location(id="cape-town", name="Ciudad del Cabo", country="ZA", lat=-33.92, lon=18.42,
+             timezone="Africa/Johannesburg",
+             koppen="Csb", seismic_level=0, flyway="africa-oriental-asia-occidental"),
+    Location(id="kuwait-city", name="Kuwait", country="KW", lat=29.38, lon=47.99,
+             timezone="Asia/Kuwait",
+             koppen="BWh", seismic_level=1, flyway="africa-oriental-asia-occidental"),
+    Location(id="tehran", name="Teherán", country="IR", lat=35.69, lon=51.39,
+             timezone="Asia/Tehran",
+             koppen="BSk", seismic_level=3, flyway="asia-central"),
+
+    # ── Asia ──────────────────────────────────────────────────────────────
+    Location(id="kathmandu", name="Katmandú", country="NP", lat=27.72, lon=85.32,
+             timezone="Asia/Kathmandu",
+             koppen="Cwb", seismic_level=3, flyway="asia-central"),
+    Location(id="mumbai", name="Bombay", country="IN", lat=19.08, lon=72.88,
+             timezone="Asia/Kolkata",
+             koppen="Aw", seismic_level=1, flyway="asia-central"),
+    Location(id="bangkok", name="Bangkok", country="TH", lat=13.76, lon=100.50,
+             timezone="Asia/Bangkok",
+             koppen="Aw", seismic_level=1, flyway="asia-oriental-australasia"),
+    Location(id="singapore", name="Singapur", country="SG", lat=1.35, lon=103.82,
+             timezone="Asia/Singapore",
+             koppen="Af", seismic_level=0, flyway="asia-oriental-australasia"),
+    Location(id="jakarta", name="Yakarta", country="ID", lat=-6.21, lon=106.85,
+             timezone="Asia/Jakarta",
+             koppen="Am", seismic_level=3, flyway="asia-oriental-australasia"),
+    Location(id="manila", name="Manila", country="PH", lat=14.60, lon=120.98,
+             timezone="Asia/Manila",
+             koppen="Aw", seismic_level=3, flyway="asia-oriental-australasia"),
+    Location(id="beijing", name="Pekín", country="CN", lat=39.90, lon=116.41,
+             timezone="Asia/Shanghai",
+             koppen="Dwa", seismic_level=2, flyway="asia-oriental-australasia"),
+    Location(id="seoul", name="Seúl", country="KR", lat=37.57, lon=126.98,
+             timezone="Asia/Seoul",
+             koppen="Dwa", seismic_level=1, flyway="asia-oriental-australasia"),
+    Location(id="tokyo", name="Tokio", country="JP", lat=35.68, lon=139.65,
+             timezone="Asia/Tokyo",
+             koppen="Cfa", seismic_level=3, flyway="asia-oriental-australasia"),
+
+    # ── Oceanía ───────────────────────────────────────────────────────────
+    Location(id="perth", name="Perth", country="AU", lat=-31.95, lon=115.86,
+             timezone="Australia/Perth",
+             koppen="Csa", seismic_level=1, flyway="asia-oriental-australasia"),
+    Location(id="alice-springs", name="Alice Springs", country="AU", lat=-23.70, lon=133.88,
+             timezone="Australia/Darwin",
+             koppen="BWh", seismic_level=1, flyway="asia-oriental-australasia"),
+    Location(id="sydney", name="Sídney", country="AU", lat=-33.87, lon=151.21,
+             timezone="Australia/Sydney",
+             koppen="Cfa", seismic_level=0, flyway="asia-oriental-australasia"),
+    Location(id="wellington", name="Wellington", country="NZ", lat=-41.29, lon=174.78,
+             timezone="Pacific/Auckland",
+             koppen="Cfb", seismic_level=3, flyway="asia-oriental-australasia"),
+]
+
+BY_ID: dict[str, Location] = {loc.id: loc for loc in LOCATIONS}
+
+# Subconjunto para historia profunda (décadas). Existe por una razón muy
+# concreta: el límite gratuito de Open-Meteo se cuenta por PESO
+# (ubicaciones × variables × días), no por número de peticiones. Un backfill de
+# 10 años sobre las 49 ciudades con las 14 variables equivale a ~38.000
+# llamadas ponderadas y no cabe en la cuota diaria de 10.000.
+#
+# Estas 12 cubren el espectro climático completo con la vigésima parte del
+# coste, y son las que permiten calcular una climatología de verdad (30 años)
+# para medir anomalías. El resto de ciudades tiene datos recientes, que es lo
+# que necesita la parte de "app".
+FLAGSHIP_IDS: tuple[str, ...] = (
+    "utqiagvik",      # ET   — tundra ártica
+    "yakutsk",        # Dfd  — continental extremo
+    "reykjavik",      # Cfc  — oceánico subpolar
+    "london",         # Cfb  — oceánico templado
+    "madrid",         # Csa  — mediterráneo continentalizado
+    "phoenix",        # BWh  — desierto cálido
+    "mexico-city",    # Cwb  — subtropical de altura
+    "singapore",      # Af   — ecuatorial húmedo
+    "nairobi",        # Cwb  — tropical de altura
+    "tokyo",          # Cfa  — subtropical húmedo
+    "santiago",       # Csb  — mediterráneo austral
+    "ushuaia",        # Cfc  — subantártico
+)
+
+FLAGSHIPS: list[Location] = [BY_ID[i] for i in FLAGSHIP_IDS]
+
+
+def get(location_id: str) -> Location:
+    if location_id not in BY_ID:
+        raise KeyError(f"Ubicación desconocida: {location_id}")
+    return BY_ID[location_id]
+
+
+def resolve(ids: list[str] | None) -> list[Location]:
+    """Resuelve una lista de ids a objetos Location. None o vacío = todas."""
+    if not ids:
+        return LOCATIONS
+    return [get(i) for i in ids]

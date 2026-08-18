@@ -1,0 +1,118 @@
+name: Ingesta diaria
+
+# El horario importa. ERA5 tiene ~5 días de latencia y USGS revisa magnitudes
+# durante días, así que no hay ninguna ventaja en madrugar. 06:15 UTC evita
+# además el minuto en punto, cuando GitHub tiene su pico de crons y las
+# ejecuciones se encolan.
+# Cuatro horarios, uno por cadencia. Cada nivel incluye a los anteriores, así
+# que el domingo 1 de mes se ejecutan los cuatro y basta con que gane el más
+# amplio — por eso el paso elige la cadencia MÁXIMA que aplique hoy.
+#
+# Sin esto el cron refrescaba solo tres de las once fuentes y dejaba envejecer
+# ocho en silencio, que es justo lo que este proyecto no puede permitirse.
+on:
+  schedule:
+    - cron: '15 6 * * *'      # diario: clima, sismos, aves
+    - cron: '35 6 * * 0'      # domingos: + ciclones
+    - cron: '55 6 1 * *'      # día 1: + índice ONI
+    - cron: '15 7 1 1 *'      # 1 de enero: + población, desastres, fenología
+  workflow_dispatch:
+    inputs:
+      cadence:
+        description: 'daily | weekly | monthly | yearly | full'
+        default: 'daily'
+
+concurrency:
+  # Dos ingestas simultáneas escribirían en bronze a la vez. Bronze es
+  # append-only y silver deduplica, así que no corrompería nada — pero
+  # duplicaría el consumo de cuota de Open-Meteo sin ganar nada.
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # A nivel de job, no de paso. El contexto `env` de un `if:` solo ve las
+    # variables declaradas en el job o el workflow: si R2_BUCKET se declara
+    # dentro del paso, su propio `if` la ve vacía y el paso nunca se ejecuta.
+    env:
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Instalar dependencias
+        run: uv sync --all-extras
+
+      # Recupera bronze del almacenamiento de objetos. Sin este paso, cada
+      # ejecución empezaría desde cero y el histórico acumulado se perdería —
+      # que es justo lo contrario de para qué existe una capa bronze.
+      - name: Restaurar bronze desde R2
+        if: env.R2_BUCKET != ''
+        run: aws s3 sync "s3://$R2_BUCKET/bronze" data/bronze --no-progress
+
+      # La cadencia se deduce de la FECHA, no del cron que disparó, porque
+      # GitHub no dice cuál de los cuatro horarios lo lanzó. Se elige siempre la
+      # más amplia que aplique hoy.
+      - name: Determinar cadencia
+        id: cadence
+        run: |
+          if [ -n "${{ inputs.cadence }}" ]; then
+            CADENCE="${{ inputs.cadence }}"
+          elif [ "$(date -u +%j)" = "001" ]; then
+            CADENCE=yearly
+          elif [ "$(date -u +%d)" = "01" ]; then
+            CADENCE=monthly
+          elif [ "$(date -u +%u)" = "7" ]; then
+            CADENCE=weekly
+          else
+            CADENCE=daily
+          fi
+          echo "value=$CADENCE" >> "$GITHUB_OUTPUT"
+          echo "Cadencia de hoy: $CADENCE"
+
+      - name: Ingerir
+        env:
+          APPCLIMA_EBIRD_TOKEN: ${{ secrets.EBIRD_TOKEN }}
+          APPCLIMA_USER_AGENT: 'AppClima/0.1 (github.com/${{ github.repository }})'
+        run: uv run appclima ingest all --cadence ${{ steps.cadence.outputs.value }}
+
+      - name: Construir silver y gold
+        run: uv run appclima build
+
+      - name: Resumen
+        run: uv run appclima status
+
+      # El build no basta como comprobación: puede construir 27 tablas sobre
+      # datos rancios sin quejarse. Los tests sí detectan si un supuesto se
+      # rompió — por ejemplo el que vigila que la correlación cobertura-año
+      # siga por encima de 0,8.
+      - name: Tests sobre el warehouse recién construido
+        run: uv run pytest -q
+
+      - name: Guardar bronze y warehouse en R2
+        if: env.R2_BUCKET != ''
+        run: |
+          aws s3 sync data/bronze "s3://$R2_BUCKET/bronze" --no-progress
+          aws s3 cp data/appclima.duckdb "s3://$R2_BUCKET/appclima.duckdb"
+
+      # Red de seguridad mientras R2 no esté configurado: al menos el warehouse
+      # de esta ejecución queda descargable. NO sustituye a R2, porque los
+      # artifacts no se acumulan entre ejecuciones.
+      - name: Subir warehouse como artifact
+        if: env.R2_BUCKET == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: warehouse-${{ github.run_number }}
+          path: data/appclima.duckdb
+          retention-days: 14
