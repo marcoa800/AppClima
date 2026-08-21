@@ -21,7 +21,7 @@ from appclima.api.export import export_static
 
 
 @pytest.fixture(scope="module")
-def exported(tmp_path_factory) -> Path:
+def exported(tmp_path_factory, warehouse_required) -> Path:
     out = tmp_path_factory.mktemp("export")
     export_static(out)
     return out
@@ -60,7 +60,9 @@ class TestExportacion:
 class TestReproducibilidad:
     """El requisito que hace publicable la exportación desde CI."""
 
-    def test_dos_exportaciones_son_identicas(self, tmp_path: Path):
+    def test_dos_exportaciones_son_identicas(
+        self, tmp_path: Path, warehouse_required
+    ):
         a, b = tmp_path / "a", tmp_path / "b"
         export_static(a)
         export_static(b)

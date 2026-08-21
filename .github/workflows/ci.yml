@@ -14,10 +14,42 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --all-extras
+
       - name: Lint
         run: uv run ruff check src/ tests/
+
+      # 30 de los 263 tests comprueban INVARIANTES DE LOS DATOS, no funciones:
+      # que el ONI mensual siga sin pasar el filtro de n efectivo, que ningún
+      # modelo publicado tenga un corte negativo, que la exportación sea
+      # reproducible byte a byte. Son de los más valiosos del repositorio y sin
+      # warehouse se saltarían en silencio, dando un CI verde que no comprueba
+      # nada de eso.
+      #
+      # 24 MB desde el asset de la release. Barato frente a reconstruirlo, que
+      # además gastaría cuota de Open-Meteo en cada push.
+      - name: Descargar el warehouse
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data
+          gh release download warehouse \
+            --pattern appclima.duckdb --dir data --clobber
+          ls -lh data/appclima.duckdb
+
       - name: Tests
         run: uv run pytest -q
+
+      # Comprueba que los tests de datos se EJECUTARON. Sin esto, un fallo al
+      # descargar el warehouse daría CI en verde con 30 tests saltados.
+      - name: Verificar que no se saltó ningún test de datos
+        run: |
+          SALTADOS=$(uv run pytest -q 2>&1 | grep -oE '[0-9]+ skipped' || true)
+          if [ -n "$SALTADOS" ]; then
+            echo "::error::Se saltaron tests ($SALTADOS). El warehouse no se descargó."
+            exit 1
+          fi
+          echo "Ningún test saltado: los invariantes de datos se comprobaron."
+
 
   web:
     runs-on: ubuntu-latest

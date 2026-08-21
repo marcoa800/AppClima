@@ -10,14 +10,13 @@ from __future__ import annotations
 
 import pytest
 
-from appclima.transform.runner import connect
 
-
-@pytest.fixture(scope="module")
-def con():
-    c = connect(read_only=True)
-    yield c
-    c.close()
+# La conexión viene de conftest.warehouse, que se salta con un mensaje
+# claro si no hay warehouse construido en lugar de reventar con un
+# error de DuckDB ilegible.
+@pytest.fixture
+def con(warehouse):
+    return warehouse
 
 
 class TestCriterioDePublicacion:
