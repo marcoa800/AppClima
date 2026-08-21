@@ -11,7 +11,8 @@ import {
   type DeadliestEvent,
   type DataSource,
   type ModelSkill,
-  type NullFinding,
+  type AftershockSequence,
+  type HeatThreshold,
   type SkillByCut,
   type ClimatologyDay,
   type Location,
@@ -30,7 +31,8 @@ import { ClimatologyChart } from './components/ClimatologyChart'
 import { GutenbergRichterChart } from './components/GutenbergRichterChart'
 import { Attribution } from './components/Attribution'
 import { ModelSkillTable } from './components/ModelSkillTable'
-import { NullFindings } from './components/NullFindings'
+import { AftershockForecast } from './components/AftershockForecast'
+import { HeatThresholds } from './components/HeatThresholds'
 import { MythTable } from './components/MythTable'
 import { OmoriChart } from './components/OmoriChart'
 
@@ -50,8 +52,12 @@ type Global = {
   birdCorr: BirdCorrelations | null
   skill: ModelSkill[]
   skillByCut: SkillByCut[]
-  nulls: NullFinding[]
-  nullsWhy: string
+  heat: HeatThreshold[]
+  heatCorr: number | null
+  heatWho: string
+  heatLimits: string
+  aftershocks: AftershockSequence[]
+  aftershockAvisos: string[]
   sources: DataSource[]
   sourcesCommercial: string
   sourcesCitation: string
@@ -79,11 +85,12 @@ export default function App() {
       api.cycloneSeasons(),
       api.birdsSummary(),
       api.modelSkill(),
-      api.nulls(),
+      api.heatThresholds(),
+      api.aftershocks(),
       api.sources(),
       api.health(),
     ])
-      .then(([locations, warming, gr, omori, myth, deadliest, cascades, cyclones, birds, skill, nulls, sources, health]) =>
+      .then(([locations, warming, gr, omori, myth, deadliest, cascades, cyclones, birds, skill, heat, after, sources, health]) =>
         setGlobal({
           locations,
           warming: warming.by_year,
@@ -100,8 +107,12 @@ export default function App() {
           birdCorr: birds.correlations,
           skill: skill.models,
           skillByCut: skill.by_cut,
-          nulls: nulls.findings,
-          nullsWhy: nulls.de_donde_salen,
+          heat: heat.cities,
+          heatCorr: heat.variability_correlation.r,
+          heatWho: heat.quien_sufre_mas,
+          heatLimits: heat.limitaciones,
+          aftershocks: after.recent_sequences,
+          aftershockAvisos: after.avisos,
           sources: sources.sources,
           sourcesCommercial: sources.aviso_comercial,
           sourcesCitation: sources.cita_incompleta,
@@ -421,15 +432,43 @@ export default function App() {
 
 
       <section className="card">
-        <h2>Lo que buscamos y no está</h2>
+        <h2>Los umbrales de alerta por calor están desfasados</h2>
         <p className="note">
-          Diez cosas que se midieron esperando encontrar algo, y no salieron.
-          Publicarlas no es humildad decorativa: demuestra que lo que sí se
-          afirma arriba pasó por el mismo filtro. Cada una lleva su cifra, su
-          tamaño de muestra y por qué es un nulo y no falta de datos.
+          Un plan de emergencia por calor se dispara al superar un umbral, y ese
+          umbral se calibra con datos históricos: el percentil 95 de la máxima
+          diaria, que por construcción debería superarse un 5% de los días. Ya no
+          es así en ninguna de estas ciudades.
         </p>
-        <NullFindings findings={global.nulls} />
-        <p className="caveat">{global.nullsWhy}</p>
+        <HeatThresholds cities={global.heat} />
+        <p className="caveat">
+          {global.heatWho}
+          {global.heatCorr !== null && (
+            <>
+              {' '}
+              Medido: r = <strong>{global.heatCorr}</strong> entre variabilidad
+              térmica y factor de amplificación.
+            </>
+          )}
+        </p>
+        <p className="caveat">{global.heatLimits}</p>
+      </section>
+
+      <section className="card">
+        <h2>Pronóstico de réplicas tras un sismo</h2>
+        <p className="note">
+          Veinticuatro horas después de un sismo de magnitud 6,5 o mayor, las
+          réplicas de ese primer día permiten estimar cuántas habrá entre el
+          segundo y el octavo. Las réplicas matan rescatistas y vecinos que
+          vuelven a casa, así que la cifra tiene un uso concreto: decidir cuándo
+          es seguro entrar en un edificio dañado o levantar una evacuación.
+        </p>
+        <AftershockForecast
+          sequences={global.aftershocks}
+          skill={global.skill.find((m) => m.model_id === 'pronostico_replicas') ?? null}
+        />
+        <p className="caveat">
+          {global.aftershockAvisos.join(' · ')}
+        </p>
       </section>
 
       <section className="card">

@@ -604,6 +604,11 @@ def export(
         f"[green]✓[/green] {result['written']} rutas en {result['out_dir']} "
         f"({result['total_bytes'] / 1_048_576:.1f} MB)"
     )
+    if result.get("retired"):
+        console.print(
+            f"[yellow]↺[/yellow] {result['retired']} rutas retiradas que ya no "
+            "se exportan (dejaban de estar en la API pero seguían publicadas)"
+        )
     if result["skipped"]:
         console.print(
             f"[dim]  {result['skipped']} rutas omitidas (404 esperado: la "

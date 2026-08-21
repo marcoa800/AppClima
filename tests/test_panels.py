@@ -227,3 +227,54 @@ class TestRegimenesDeCobertura:
         assert "data_coverage_change" not in columnas
         assert "coverage_regime_change" in columnas
         assert "coverage_regime" in columnas
+
+
+class TestUmbralesDeCalor:
+    """El hallazgo con más valor preventivo del proyecto.
+
+    Un plan de emergencia por calor se dispara al superar un umbral calibrado
+    sobre el percentil 95 histórico, que por construcción debería superarse un
+    5% de los días. Estos tests vigilan que la señal siga ahí y con el signo
+    correcto — si algún día desaparece, es que el panel cambió y hay que
+    revisar la conclusión, no el test.
+    """
+
+    def test_todas_las_ciudades_superan_su_umbral_mas_de_lo_previsto(self, con):
+        """Salvo excepciones reales, el desfase es generalizado."""
+        n, por_encima = con.execute("""
+            SELECT count(*), sum(CASE WHEN amplification > 1 THEN 1 ELSE 0 END)
+            FROM gold_heat_threshold_drift
+        """).fetchone()
+        assert n == 12
+        assert por_encima >= 10, (
+            "el desfase de umbrales dejó de ser generalizado: revisar"
+        )
+
+    def test_singapur_es_el_caso_extremo(self, con):
+        """Clima estable, así que no tiene margen para absorber el cambio."""
+        amp, drift = con.execute("""
+            SELECT amplification, threshold_drift_c
+            FROM gold_heat_threshold_drift WHERE location_id = 'singapore'
+        """).fetchone()
+        assert amp >= 5, "Singapur debería seguir en prioridad urgente"
+        assert drift > 1
+
+    def test_los_climas_estables_se_amplifican_mas(self, con):
+        """La correlación que hace el hallazgo contraintuitivo y accionable.
+
+        Negativa: a MENOS variabilidad, MÁS amplificación. Es lo que implica
+        que las ciudades tropicales necesiten planes de calor con urgencia.
+        """
+        r = con.execute("""
+            SELECT corr(temp_variability_sd, amplification)
+            FROM gold_heat_threshold_drift
+        """).fetchone()[0]
+        assert r < -0.3, f"la relación variabilidad-amplificación cambió: r={r}"
+
+    def test_el_umbral_nuevo_es_un_percentil_no_una_invencion(self, con):
+        """Debe caer entre el viejo y el récord observado."""
+        malos = con.execute("""
+            SELECT location_id FROM gold_heat_threshold_drift
+            WHERE threshold_2019_2025 > temp_max_record
+        """).fetchall()
+        assert malos == [], f"umbral por encima del récord: {malos}"

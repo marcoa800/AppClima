@@ -1,5 +1,10 @@
 """Tests de los catálogos de atribución y de resultados nulos.
 
+Los nulos NO se publican en el sitio estático: son material de administración.
+En un sitio estático "privado" solo es real si el fichero no existe, así que se
+excluyen de la exportación en vez de esconderse tras una URL. El endpoint sigue
+vivo en FastAPI para uso local, y estos tests siguen protegiendo el catálogo.
+
 La atribución no es cortesía: es obligación de licencia. Un catálogo que se
 desincroniza de las fuentes reales incumple sin que nadie se entere, y estos
 tests son lo que lo impide.
@@ -100,6 +105,19 @@ class TestResultadosNulos:
     def test_hay_nulos_definitivos_y_no_solo_provisionales(self):
         """Un catálogo entero de 'provisional' no afirmaría nada."""
         assert sum(1 for n in NULL_FINDINGS if n.strength == "definitivo") >= 2
+
+    def test_no_se_exportan_al_sitio_publico(self):
+        """Son material interno: se retiran de la exportación, no se esconden.
+
+        En un sitio estático, esconder algo tras una URL rara es falsa
+        privacidad — cualquiera puede pedirla. La única forma de retirarlo es
+        que el fichero no se genere.
+        """
+        from appclima.api.export import _routes
+
+        assert "patterns/nulls" not in _routes(), (
+            "los nulos volverían a publicarse en el sitio estático"
+        )
 
     def test_los_nulos_estrella_siguen_presentes(self):
         """Los tres que mejor resumen la disciplina del proyecto.

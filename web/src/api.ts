@@ -281,6 +281,38 @@ export type DataSource = {
   note: string | null
 }
 
+export type HeatThreshold = {
+  location_id: string
+  location_name: string
+  country: string
+  koppen: string
+  abs_lat: number
+  threshold_2006_2018: number
+  threshold_2019_2025: number
+  threshold_drift_c: number
+  pct_exceeded_now: number
+  pct_expected: number
+  amplification: number
+  days_per_year_expected: number
+  days_per_year_now: number
+  temp_variability_sd: number
+  temp_max_record: number
+  recalibration_priority: string
+}
+
+export type AftershockSequence = {
+  mainshock_id: string
+  mainshock_time: string
+  mainshock_mag: number
+  place: string | null
+  mag_band: string
+  n1: number
+  observed_days_2_8: number
+  predicted_days_2_8: number
+  predicted_low: number
+  predicted_high: number
+}
+
 export const api = {
   health: () =>
     get<{ status: string; freshness: Record<string, string | null> }>('/health'),
@@ -336,6 +368,21 @@ export const api = {
       por_que_publicarlos: string
       de_donde_salen: string
     }>('/patterns/nulls'),
+  heatThresholds: () =>
+    get<{
+      cities: HeatThreshold[]
+      variability_correlation: { r: number | null; n: number }
+      que_significa: string
+      quien_sufre_mas: string
+      limitaciones: string
+    }>('/prevention/heat-thresholds'),
+  aftershocks: () =>
+    get<{
+      recent_sequences: AftershockSequence[]
+      skill: ModelSkill
+      como_leerlo: string
+      avisos: string[]
+    }>('/predict/aftershocks'),
   sources: () =>
     get<{
       sources: DataSource[]

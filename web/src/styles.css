@@ -457,3 +457,15 @@ table.data a:hover {
   max-width: 84ch;
   line-height: 1.5;
 }
+
+/* Amplificación del umbral de calor */
+.amp-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.amp-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}

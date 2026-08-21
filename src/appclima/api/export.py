@@ -10,6 +10,12 @@ servidor para servirlo sería pagar por un problema que no hace falta tener:
     puede caerse          imposible
     consulta a DuckDB     CDN
 
+**Una ruta se queda fuera a propósito: `/patterns/nulls`.** En un sitio
+estático, "privado" solo es real si el fichero NO EXISTE — esconderlo tras una
+URL rara sería falsa privacidad, porque cualquiera puede pedirla. El endpoint
+sigue vivo en FastAPI para uso local y de administración; simplemente no se
+publica.
+
 **Lo que NO cambia.** Los JSON estáticos SON el contrato de la API,
 materializado. FastAPI se queda para desarrollo local y para el cliente de iOS,
 que necesita consultas con parámetros. La frontera entre datos e interfaz sigue
@@ -71,7 +77,7 @@ def _routes() -> dict[str, Callable[[], Any]]:
         "predict/aftershocks": lambda: api.aftershock_forecast(limit=30),
         "events": lambda: api.historical_events(category=None),
         "sources": api.data_sources,
-        "patterns/nulls": api.null_findings,
+        "prevention/heat-thresholds": api.heat_thresholds,
         "panels/coverage": lambda: api.panel_coverage(panel=None),
         "panels/year": lambda: api.year_panel(
             from_year=1900, to_year=2026, regime=None
@@ -131,6 +137,29 @@ def export_static(out_dir: Path) -> dict[str, Any]:
             total_bytes += _write(out_dir / f"{route}.json", payload)
             written += 1
 
+        # **Limpieza de rutas retiradas.** Sin esto, un endpoint que deja de
+        # exportarse conserva su JSON antiguo en la carpeta de salida y se
+        # sigue publicando indefinidamente. Pasó de verdad al sacar
+        # /patterns/nulls del sitio público: el fichero seguía ahí.
+        #
+        # En un sitio estático eso es lo contrario de retirar algo, porque el
+        # fichero sigue siendo accesible para cualquiera que conozca la ruta.
+        esperados = {out_dir / f"{r}.json" for r in routes}
+        esperados.add(out_dir / "manifest.json")
+
+        retirados = 0
+        for existente in out_dir.rglob("*.json"):
+            if existente not in esperados:
+                existente.unlink()
+                retirados += 1
+        if retirados:
+            log.info("Retiradas %d rutas que ya no se exportan", retirados)
+
+        # Carpetas que quedaron vacías tras la limpieza.
+        for carpeta in sorted(out_dir.rglob("*"), reverse=True):
+            if carpeta.is_dir() and not any(carpeta.iterdir()):
+                carpeta.rmdir()
+
         # Manifiesto: qué se exportó y cuándo. Sirve para que el cliente pueda
         # comprobar la frescura sin pedir todos los ficheros.
         from datetime import UTC, datetime
@@ -149,6 +178,7 @@ def export_static(out_dir: Path) -> dict[str, Any]:
             "written": written,
             "skipped": len(skipped),
             "total_bytes": total_bytes,
+            "retired": retirados,
             "out_dir": out_dir,
         }
     finally:
