@@ -25,16 +25,24 @@ jobs:
       # warehouse se saltarían en silencio, dando un CI verde que no comprueba
       # nada de eso.
       #
-      # 24 MB desde el asset de la release. Barato frente a reconstruirlo, que
-      # además gastaría cuota de Open-Meteo en cada push.
-      - name: Descargar el warehouse
+      # Se descarga BRONZE y se reconstruye, no el warehouse ya hecho. Un
+      # warehouse prefabricado se queda desfasado en cuanto se añade un modelo,
+      # y los tests nuevos fallarían por una tabla que no existe en él en vez
+      # de por un problema real.
+      #
+      # Reconstruir cuesta un minuto y es además el principio del proyecto:
+      # bronze es lo único duradero. No se reingiere nada — los backfills
+      # históricos ya viven dentro de bronze.
+      - name: Recuperar bronze y construir
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p data
           gh release download warehouse \
-            --pattern appclima.duckdb --dir data --clobber
-          ls -lh data/appclima.duckdb
+            --pattern bronze.tar.zst --dir /tmp --clobber
+          zstd -dc /tmp/bronze.tar.zst | tar -x
+          find data/bronze -name '._*' -delete 2>/dev/null || true
+          uv run appclima build
 
       - name: Tests
         run: uv run pytest -q

@@ -56,31 +56,41 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      # El warehouse NO se reconstruye aquí, y el motivo es importante:
-      # `ingest all --cadence full` cubre las once fuentes pero NO los backfills
-      # históricos, que son operaciones puntuales y no periódicas — los 20 años
-      # de reanálisis ERA5 y el catálogo sísmico desde 2016. Sin ellos el
-      # warehouse sale sin climatología, sin anomalías y sin modelo de calor:
-      # el sitio se publicaría roto.
+      # **Se descarga BRONZE y se reconstruye, no se descarga el warehouse.**
       #
-      # Así que se descarga ya construido. Dos orígenes, por orden:
-      #   1. R2, que es donde lo deja el workflow de ingesta diaria
-      #   2. el asset de la release `warehouse`, que no necesita cuenta de
-      #      Cloudflare y basta para publicar hoy
-      - name: Recuperar el warehouse
+      # Distribuir el warehouse ya construido lo acopla al código: al añadir un
+      # modelo nuevo, el warehouse de la release no lo tenía y la exportación
+      # fallaba con "Table gold_heat_threshold_drift does not exist". Pasó de
+      # verdad.
+      #
+      # Es además el principio que sostiene todo el proyecto y que aquí se
+      # estaba incumpliendo: bronze es lo único duradero, y silver y gold se
+      # reconstruyen desde cero cuando cambia la lógica. Reconstruir cuesta un
+      # minuto y garantiza que el sitio publicado corresponde al código
+      # publicado.
+      #
+      # Lo que NO se hace aquí es reingerir: los backfills históricos —20 años
+      # de ERA5 y el catálogo sísmico— son operaciones puntuales que viven en
+      # bronze y no se reingieren nunca.
+      - name: Recuperar bronze
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p data
           if [ -n "$R2_BUCKET" ]; then
-            echo "Origen: R2 (datos frescos de la ingesta diaria)"
-            aws s3 cp "s3://$R2_BUCKET/appclima.duckdb" data/appclima.duckdb
+            echo "Origen: R2"
+            aws s3 sync "s3://$R2_BUCKET/bronze" data/bronze --no-progress
           else
-            echo "Origen: asset de la release (sin R2 configurado)"
+            echo "Origen: asset de la release"
             gh release download warehouse \
-              --pattern appclima.duckdb --dir data --clobber
+              --pattern bronze.tar.zst --dir /tmp --clobber
+            zstd -dc /tmp/bronze.tar.zst | tar -x
+            find data/bronze -name '._*' -delete 2>/dev/null || true
           fi
-          ls -lh data/appclima.duckdb
+          du -sh data/bronze
+
+      - name: Construir el warehouse desde bronze
+        run: uv run appclima build
 
       - name: Exportar la API a JSON estático
         run: uv run appclima export --out web/public/api
