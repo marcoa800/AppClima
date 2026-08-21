@@ -22,6 +22,11 @@ on:
         description: 'daily | weekly | monthly | yearly | full'
         default: 'daily'
 
+# Necesario para actualizar los assets de la release, que es donde vive el
+# estado persistente cuando no hay R2 configurado.
+permissions:
+  contents: write
+
 concurrency:
   # Dos ingestas simultáneas escribirían en bronze a la vez. Bronze es
   # append-only y silver deduplica, así que no corrompería nada — pero
@@ -54,12 +59,34 @@ jobs:
       - name: Instalar dependencias
         run: uv sync --all-extras
 
-      # Recupera bronze del almacenamiento de objetos. Sin este paso, cada
-      # ejecución empezaría desde cero y el histórico acumulado se perdería —
-      # que es justo lo contrario de para qué existe una capa bronze.
-      - name: Restaurar bronze desde R2
-        if: env.R2_BUCKET != ''
-        run: aws s3 sync "s3://$R2_BUCKET/bronze" data/bronze --no-progress
+      # **El paso más importante del workflow.** Sin él cada ejecución empieza
+      # con bronze vacío, y el warehouse resultante sale sin climatología, sin
+      # anomalías y sin modelo de réplicas: los backfills históricos —20 años de
+      # ERA5 y el catálogo sísmico— viven en bronze y no se reingieren a diario.
+      #
+      # Se comprobó a las malas: la primera ejecución sin este paso construyó un
+      # warehouse con 2 regímenes de cobertura en vez de 5, y los tests lo
+      # cazaron con `assert 2 >= 4`.
+      #
+      # Dos orígenes, por orden de preferencia:
+      #   1. R2, si está configurado
+      #   2. el asset `bronze.tar.zst` de la release, que no necesita cuenta de
+      #      Cloudflare y hace que el proyecto sea autosuficiente en GitHub
+      - name: Restaurar bronze
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data
+          if [ -n "$R2_BUCKET" ]; then
+            echo "Origen: R2"
+            aws s3 sync "s3://$R2_BUCKET/bronze" data/bronze --no-progress
+          else
+            echo "Origen: asset de la release"
+            gh release download warehouse \
+              --pattern bronze.tar.zst --dir /tmp --clobber
+            tar -x -I zstd -f /tmp/bronze.tar.zst
+          fi
+          du -sh data/bronze
 
       # La cadencia se deduce de la FECHA, no del cron que disparó, porque
       # GitHub no dice cuál de los cuatro horarios lo lanzó. Se elige siempre la
@@ -100,19 +127,20 @@ jobs:
       - name: Tests sobre el warehouse recién construido
         run: uv run pytest -q
 
-      - name: Guardar bronze y warehouse en R2
-        if: env.R2_BUCKET != ''
+      # Solo se persiste si los tests pasaron: el `needs` implícito de los pasos
+      # secuenciales ya lo garantiza. Publicar un bronze corrupto sería peor que
+      # no publicar nada, porque contaminaría todas las ejecuciones siguientes.
+      - name: Persistir bronze y warehouse
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          aws s3 sync data/bronze "s3://$R2_BUCKET/bronze" --no-progress
-          aws s3 cp data/appclima.duckdb "s3://$R2_BUCKET/appclima.duckdb"
+          if [ -n "$R2_BUCKET" ]; then
+            aws s3 sync data/bronze "s3://$R2_BUCKET/bronze" --no-progress
+            aws s3 cp data/appclima.duckdb "s3://$R2_BUCKET/appclima.duckdb"
+          else
+            tar -c -I 'zstd -19 -T0' -f bronze.tar.zst data/bronze
+            gh release upload warehouse \
+              bronze.tar.zst data/appclima.duckdb --clobber
+            ls -lh bronze.tar.zst data/appclima.duckdb
+          fi
 
-      # Red de seguridad mientras R2 no esté configurado: al menos el warehouse
-      # de esta ejecución queda descargable. NO sustituye a R2, porque los
-      # artifacts no se acumulan entre ejecuciones.
-      - name: Subir warehouse como artifact
-        if: env.R2_BUCKET == ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: warehouse-${{ github.run_number }}
-          path: data/appclima.duckdb
-          retention-days: 14
