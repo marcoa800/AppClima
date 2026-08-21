@@ -9,8 +9,9 @@
 interface ImportMetaEnv {
   /** 'true' hace que el cliente pida ficheros .json en vez de la API. */
   readonly VITE_API_STATIC?: string
-  /** Prefijo de las rutas. '/api' en ambos modos. */
-  readonly VITE_API_BASE?: string
+  /** Subdirectorio donde se sirve el sitio. Lo usa vite.config, no el cliente:
+   *  el cliente lee `BASE_URL`, que Vite deriva de ahí. */
+  readonly VITE_BASE?: string
 }
 
 interface ImportMeta {

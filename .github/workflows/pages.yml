@@ -85,7 +85,13 @@ jobs:
       - name: Exportar la API a JSON estático
         run: uv run appclima export --out web/public/api
 
+      # VITE_BASE tiene que coincidir con el subdirectorio donde Pages sirve el
+      # sitio. Se toma del nombre real del repositorio para que renombrarlo no
+      # rompa el despliegue en silencio — el síntoma sería una página en blanco
+      # sin ningún error.
       - name: Construir la web
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
         run: npm ci && npm run build
         working-directory: web
 

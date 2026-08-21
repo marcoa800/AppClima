@@ -15,8 +15,15 @@
  * modo servidor se serializan como query string.
  */
 
-const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/api'
 const STATIC = import.meta.env.VITE_API_STATIC === 'true'
+
+// En modo estático las rutas cuelgan del base del SITIO, que en GitHub Pages
+// es /AppClima/ y no la raíz del dominio. `BASE_URL` lo rellena Vite a partir
+// de su opción `base` y siempre termina en '/', así que concatenar 'api' da la
+// ruta correcta tanto en la raíz como en un subdirectorio.
+//
+// En desarrollo se usa /api, que el proxy de Vite reenvía a FastAPI.
+const BASE = STATIC ? `${import.meta.env.BASE_URL}api` : '/api'
 
 type Params = Record<string, string | number | undefined>
 
