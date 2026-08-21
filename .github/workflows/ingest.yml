@@ -84,7 +84,13 @@ jobs:
             echo "Origen: asset de la release"
             gh release download warehouse \
               --pattern bronze.tar.zst --dir /tmp --clobber
-            tar -x -I zstd -f /tmp/bronze.tar.zst
+            zstd -dc /tmp/bronze.tar.zst | tar -x
+            # Defensa: si el archivo se creó en macOS puede traer ficheros
+            # AppleDouble (._algo.parquet) con los atributos extendidos. En
+            # Linux quedan como ficheros sueltos, el glob **/*.parquet los
+            # captura y DuckDB revienta con "No magic bytes found at end of
+            # file". Costó una ejecución entera descubrirlo.
+            find data/bronze -name '._*' -delete 2>/dev/null || true
           fi
           du -sh data/bronze
 
@@ -138,7 +144,10 @@ jobs:
             aws s3 sync data/bronze "s3://$R2_BUCKET/bronze" --no-progress
             aws s3 cp data/appclima.duckdb "s3://$R2_BUCKET/appclima.duckdb"
           else
-            tar -c -I 'zstd -19 -T0' -f bronze.tar.zst data/bronze
+            # COPYFILE_DISABLE y --exclude por si algún día se archiva desde
+            # macOS: su tar embebe los atributos extendidos como ficheros ._*.
+            COPYFILE_DISABLE=1 tar -c --exclude='._*' --exclude='.DS_Store' \
+              data/bronze | zstd -19 -T0 -q -o bronze.tar.zst -f
             gh release upload warehouse \
               bronze.tar.zst data/appclima.duckdb --clobber
             ls -lh bronze.tar.zst data/appclima.duckdb
