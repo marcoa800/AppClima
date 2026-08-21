@@ -56,17 +56,31 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      # El warehouse viene de R2, construido por el workflow de ingesta. Sin R2
-      # habría que reingerir aquí, que gastaría cuota de Open-Meteo por nada.
-      - name: Recuperar warehouse desde R2
-        if: env.R2_BUCKET != ''
-        run: aws s3 cp "s3://$R2_BUCKET/appclima.duckdb" data/appclima.duckdb
-
-      - name: Reconstruir warehouse (si no hay R2)
-        if: env.R2_BUCKET == ''
+      # El warehouse NO se reconstruye aquí, y el motivo es importante:
+      # `ingest all --cadence full` cubre las once fuentes pero NO los backfills
+      # históricos, que son operaciones puntuales y no periódicas — los 20 años
+      # de reanálisis ERA5 y el catálogo sísmico desde 2016. Sin ellos el
+      # warehouse sale sin climatología, sin anomalías y sin modelo de calor:
+      # el sitio se publicaría roto.
+      #
+      # Así que se descarga ya construido. Dos orígenes, por orden:
+      #   1. R2, que es donde lo deja el workflow de ingesta diaria
+      #   2. el asset de la release `warehouse`, que no necesita cuenta de
+      #      Cloudflare y basta para publicar hoy
+      - name: Recuperar el warehouse
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          uv run appclima ingest all --cadence full
-          uv run appclima build
+          mkdir -p data
+          if [ -n "$R2_BUCKET" ]; then
+            echo "Origen: R2 (datos frescos de la ingesta diaria)"
+            aws s3 cp "s3://$R2_BUCKET/appclima.duckdb" data/appclima.duckdb
+          else
+            echo "Origen: asset de la release (sin R2 configurado)"
+            gh release download warehouse \
+              --pattern appclima.duckdb --dir data --clobber
+          fi
+          ls -lh data/appclima.duckdb
 
       - name: Exportar la API a JSON estático
         run: uv run appclima export --out web/public/api
