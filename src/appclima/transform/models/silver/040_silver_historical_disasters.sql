@@ -16,7 +16,7 @@
 -- DuckDB sí admite fechas anteriores a Cristo, comprobado con el evento más
 -- antiguo del archivo (año -4360).
 
-CREATE OR REPLACE VIEW silver_historical_disasters AS
+CREATE OR REPLACE TABLE silver_historical_disasters AS
 WITH unioned AS (
     SELECT * FROM {{bronze_noaa_eq}}
     UNION ALL BY NAME

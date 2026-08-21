@@ -17,7 +17,7 @@
 --   Nunca debe presentarse como una cifra: es un artefacto de conveniencia,
 --   y por eso viaja siempre junto a low, high y el ratio.
 
-CREATE OR REPLACE VIEW silver_epidemics AS
+CREATE OR REPLACE TABLE silver_epidemics AS
 WITH ranked AS (
     SELECT
         * EXCLUDE (ingest_date, _source),

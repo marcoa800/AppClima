@@ -17,7 +17,7 @@
 --    las cuencas que reportan más a menudo — y haría que el Atlántico y el
 --    Pacífico occidental dejaran de ser comparables.
 
-CREATE OR REPLACE VIEW silver_cyclone_tracks AS
+CREATE OR REPLACE TABLE silver_cyclone_tracks AS
 WITH ranked AS (
     SELECT
         * EXCLUDE (ingest_date, _source),

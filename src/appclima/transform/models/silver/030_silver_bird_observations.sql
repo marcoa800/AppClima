@@ -16,7 +16,7 @@
 -- depende de cuánta gente salió a mirar, no solo de cuántas aves había. Ver el
 -- aviso en schemas/birds.py antes de sacar conclusiones sobre migración.
 
-CREATE OR REPLACE VIEW silver_bird_observations AS
+CREATE OR REPLACE TABLE silver_bird_observations AS
 WITH ranked AS (
     SELECT
         location_id,

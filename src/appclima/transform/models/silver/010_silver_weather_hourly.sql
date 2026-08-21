@@ -15,7 +15,7 @@
 -- Dentro de un mismo kind sí deduplicamos: bronze es append-only, así que
 -- reejecutar el cron el mismo día genera filas repetidas. Gana la más reciente.
 
-CREATE OR REPLACE VIEW silver_weather_hourly AS
+CREATE OR REPLACE TABLE silver_weather_hourly AS
 WITH ranked AS (
     SELECT
         location_id,

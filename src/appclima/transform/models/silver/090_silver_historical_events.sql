@@ -7,7 +7,7 @@
 -- temporal larga de este warehouse, porque marca dónde la serie cambia de
 -- régimen sin que el fenómeno subyacente cambie.
 
-CREATE OR REPLACE VIEW silver_historical_events AS
+CREATE OR REPLACE TABLE silver_historical_events AS
 WITH ranked AS (
     SELECT
         * EXCLUDE (ingest_date, _source),

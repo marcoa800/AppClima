@@ -172,6 +172,18 @@ def build_warehouse() -> Path:
         # horaria muestra horas distintas y parece un bug de ingesta.
         con.execute("SET TimeZone='UTC'")
 
+        # Migración: silver pasó de VISTAS a TABLAS por portabilidad, y DuckDB
+        # no permite CREATE OR REPLACE TABLE sobre una vista existente. Sin
+        # esto, cualquier warehouse construido antes del cambio rompe el build
+        # con "Existing object is of type View".
+        vistas_antiguas = con.execute("""
+            SELECT view_name FROM duckdb_views() WHERE view_name LIKE 'silver_%'
+        """).fetchall()
+        for (nombre,) in vistas_antiguas:
+            con.execute(f"DROP VIEW IF EXISTS {nombre} CASCADE")
+        if vistas_antiguas:
+            log.info("Migradas %d vistas silver a tablas", len(vistas_antiguas))
+
         _seed_locations(con)
 
         macros = MODELS_DIR / "macros.sql"

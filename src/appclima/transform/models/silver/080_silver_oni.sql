@@ -16,7 +16,7 @@
 -- umbral; aquí se marca la fase trimestre a trimestre, que es más granular y
 -- suficiente para correlacionar.
 
-CREATE OR REPLACE VIEW silver_oni AS
+CREATE OR REPLACE TABLE silver_oni AS
 WITH ranked AS (
     SELECT
         * EXCLUDE (ingest_date, _source),

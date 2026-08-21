@@ -12,7 +12,7 @@
 -- tirarlo sería absurdo. Lo que hay que hacer es no mezclarlos nunca en la
 -- misma suma, y para eso está `is_aggregate`.
 
-CREATE OR REPLACE VIEW silver_population AS
+CREATE OR REPLACE TABLE silver_population AS
 WITH ranked AS (
     SELECT
         * EXCLUDE (ingest_date, _source),

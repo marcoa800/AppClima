@@ -17,7 +17,7 @@
 -- revisa magnitudes durante días, y lo que queremos es la última revisión del
 -- evento, no simplemente la última vez que nosotros lo descargamos.
 
-CREATE OR REPLACE VIEW silver_earthquakes AS
+CREATE OR REPLACE TABLE silver_earthquakes AS
 WITH ranked AS (
     SELECT
         event_id,
