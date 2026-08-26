@@ -1,0 +1,4 @@
+
+# Artefacto incremental de tsc: cambia en cada build y no aporta nada
+# al repositorio, solo ruido en cada diff.
+tsconfig.tsbuildinfo
