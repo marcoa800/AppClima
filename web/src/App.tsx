@@ -9,9 +9,13 @@ import {
   type CycloneSeason,
   type CycloneTrend,
   type DeadliestEvent,
+  type DengueLag,
+  type DengueProvince,
+  type DengueSkill,
   type DataSource,
   type ModelSkill,
   type AftershockSequence,
+  type HazardCity,
   type HeatThreshold,
   type SkillByCut,
   type ClimatologyDay,
@@ -20,6 +24,7 @@ import {
   type MythRow,
   type OmoriDay,
   type Sequence,
+  type Unprecedented,
   type WarmingYear,
 } from './api'
 import { AnomalyChart } from './components/AnomalyChart'
@@ -33,6 +38,9 @@ import { Attribution } from './components/Attribution'
 import { ModelSkillTable } from './components/ModelSkillTable'
 import { AftershockForecast } from './components/AftershockForecast'
 import { HeatThresholds } from './components/HeatThresholds'
+import { UnprecedentedDays } from './components/UnprecedentedDays'
+import { HazardProfile } from './components/HazardProfile'
+import { DengueClimate } from './components/DengueClimate'
 import { MythTable } from './components/MythTable'
 import { OmoriChart } from './components/OmoriChart'
 
@@ -56,6 +64,20 @@ type Global = {
   heatCorr: number | null
   heatWho: string
   heatLimits: string
+  unprecedented: Unprecedented[]
+  unprecedentedProof: string
+  unprecedentedWhy: string
+  unprecedentedLimits: string
+  hazard: HazardCity[]
+  hazardNoIndex: string
+  hazardNotRisk: string
+  dengue: DengueProvince[]
+  dengueLags: DengueLag[]
+  dengueSkill: DengueSkill[]
+  dengueWhatIsIt: string
+  dengueNotProven: string
+  denguePredict: string
+  dengueUseful: string
   aftershocks: AftershockSequence[]
   aftershockAvisos: string[]
   sources: DataSource[]
@@ -86,11 +108,14 @@ export default function App() {
       api.birdsSummary(),
       api.modelSkill(),
       api.heatThresholds(),
+      api.unprecedented(),
+      api.hazardProfile(),
+      api.dengue(),
       api.aftershocks(),
       api.sources(),
       api.health(),
     ])
-      .then(([locations, warming, gr, omori, myth, deadliest, cascades, cyclones, birds, skill, heat, after, sources, health]) =>
+      .then(([locations, warming, gr, omori, myth, deadliest, cascades, cyclones, birds, skill, heat, unprec, hazard, dengue, after, sources, health]) =>
         setGlobal({
           locations,
           warming: warming.by_year,
@@ -111,6 +136,20 @@ export default function App() {
           heatCorr: heat.variability_correlation.r,
           heatWho: heat.quien_sufre_mas,
           heatLimits: heat.limitaciones,
+          unprecedented: unprec.cities,
+          unprecedentedProof: unprec.la_prueba,
+          unprecedentedWhy: unprec.por_que_una_razon_y_no_un_recuento,
+          unprecedentedLimits: unprec.limitaciones,
+          hazard: hazard.cities,
+          hazardNoIndex: hazard.por_que_no_hay_un_indice,
+          hazardNotRisk: hazard.esto_es_peligro_no_riesgo,
+          dengue: dengue.provincias,
+          dengueLags: dengue.correlaciones_por_retardo,
+          dengueSkill: dengue.habilidad_predictiva,
+          dengueWhatIsIt: dengue.que_hay_aqui,
+          dengueNotProven: dengue.que_no_demuestra,
+          denguePredict: dengue.y_predecir,
+          dengueUseful: dengue.para_que_sirve_entonces,
           aftershocks: after.recent_sequences,
           aftershockAvisos: after.avisos,
           sources: sources.sources,
@@ -432,6 +471,27 @@ export default function App() {
 
 
       <section className="card">
+        <h2>Días para los que esta ciudad no tiene precedente</h2>
+        <p className="note">
+          Un día sin precedente supera todo lo registrado en su misma época del
+          año durante los trece años anteriores. Importa porque las
+          infraestructuras, los protocolos y las intuiciones se calibran con lo
+          vivido: un valor nunca visto es, por definición, uno para el que nadie
+          se preparó.
+        </p>
+        <p className="note">
+          La cifra publicada no es el recuento sino la <strong>razón contra lo
+          esperado</strong>. Contar récords y decir que aumentan es una trampa,
+          porque los récords se vuelven más raros con el tiempo aunque el clima
+          no cambie: con n valores previos, la probabilidad de que el siguiente
+          los supere todos es 1/(n+1). Un 1,0 significa «lo normal».
+        </p>
+        <UnprecedentedDays cities={global.unprecedented} />
+        <p className="caveat">{global.unprecedentedProof}</p>
+        <p className="caveat">{global.unprecedentedLimits}</p>
+      </section>
+
+      <section className="card">
         <h2>Los umbrales de alerta por calor están desfasados</h2>
         <p className="note">
           Un plan de emergencia por calor se dispara al superar un umbral, y ese
@@ -469,6 +529,38 @@ export default function App() {
         <p className="caveat">
           {global.aftershockAvisos.join(' · ')}
         </p>
+      </section>
+
+
+      <section className="card">
+        <h2>Perfil de peligro: cuatro frentes, sin sumarlos</h2>
+        <p className="note">
+          Lo natural sería fundir ciclones, sismos y calor en un «índice de
+          riesgo». No se hace, y no por pereza: sumar exige pesos, y no existe
+          forma defendible de decir cuántos sismos de magnitud 6 equivalen a un
+          ciclón de categoría 3. Cualquier peso es una opinión disfrazada de
+          cálculo — y el número resultante ordenaría ciudades para decidir cosas.
+        </p>
+        <HazardProfile cities={global.hazard} />
+        <p className="caveat">{global.hazardNotRisk}</p>
+        <p className="caveat">{global.hazardNoIndex}</p>
+      </section>
+
+      <section className="card">
+        <h2>Dengue y clima en Perú: lo que se buscó y no está</h2>
+        <p className="note">{global.dengueWhatIsIt}</p>
+        <DengueClimate
+          provincias={global.dengue}
+          retardos={global.dengueLags}
+          habilidad={global.dengueSkill}
+        />
+        <p className="caveat">
+          <strong>Sin umbral térmico.</strong> {global.dengueNotProven}
+        </p>
+        <p className="caveat">
+          <strong>Y sin capacidad de predecir.</strong> {global.denguePredict}
+        </p>
+        <p className="caveat">{global.dengueUseful}</p>
       </section>
 
       <section className="card">

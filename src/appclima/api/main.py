@@ -1078,10 +1078,10 @@ def model_skill() -> dict:
             ORDER BY improvement_median DESC, model_id, scope
         """),
         "by_cut": _query("""
-            SELECT model_id, cut_year, n_test, value_model, value_baseline,
-                   improvement_pct
+            SELECT model_id, scope, cut_year, n_test, value_model,
+                   value_baseline, improvement_pct
             FROM gold_model_skill
-            ORDER BY model_id, cut_year
+            ORDER BY model_id, scope, cut_year
         """),
         "criterio": (
             "should_display exige DOS condiciones: que la mediana sobre todos "

@@ -17,9 +17,13 @@ export function ModelSkillTable({
   models: ModelSkill[]
   byCut: SkillByCut[]
 }) {
-  const cutsFor = (id: string) =>
+  // Filtrar también por ámbito, no solo por modelo. El dengue se evalúa por
+  // provincia, así que un mismo model_id tiene doce series de cortes: sin el
+  // filtro, la línea de un modelo mezclaría doce provincias en doce puntos que
+  // parecerían una evolución temporal.
+  const cutsFor = (id: string, scope: string) =>
     byCut
-      .filter((c) => c.model_id === id)
+      .filter((c) => c.model_id === id && (c.scope === undefined || c.scope === scope))
       .sort((a, b) => a.cut_year - b.cut_year)
 
   return (
@@ -38,8 +42,15 @@ export function ModelSkillTable({
         </thead>
         <tbody>
           {models.map((m) => (
-            <tr key={m.model_id} className={m.should_display ? 'pooled' : undefined}>
-              <td>{m.model_id.replace(/_/g, ' ')}</td>
+            <tr key={`${m.model_id}|${m.scope}`} className={m.should_display ? 'pooled' : undefined}>
+              <td>
+                {m.model_id.replace(/_/g, ' ')}
+                {/* El ámbito deja de ser decorativo desde que el dengue se
+                    evalúa por provincia: sin él, doce filas idénticas. */}
+                {m.scope !== 'GLOBAL' && (
+                  <div className="src-org">{m.scope}</div>
+                )}
+              </td>
               <td className="num">{m.n_cuts}</td>
               <td className="num" style={{ fontWeight: 600 }}>
                 {m.improvement_median > 0 ? '+' : ''}
@@ -63,7 +74,7 @@ export function ModelSkillTable({
                 {/* Minigráfico: un punto por corte temporal. Deja ver de un
                     vistazo si el modelo es estable o depende de dónde cortes. */}
                 <svg width={92} height={16} role="img" aria-label="mejora por corte">
-                  {cutsFor(m.model_id).map((c, i, arr) => {
+                  {cutsFor(m.model_id, m.scope).map((c, i, arr) => {
                     const span = Math.max(
                       ...arr.map((x) => Math.abs(x.improvement_pct)),
                       1,
@@ -72,7 +83,7 @@ export function ModelSkillTable({
                     const y = 8 - (c.improvement_pct / span) * 6
                     return (
                       <circle
-                        key={c.cut_year}
+                        key={`${c.model_id}|${c.cut_year}`}
                         cx={x}
                         cy={y}
                         r={2.5}

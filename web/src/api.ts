@@ -250,6 +250,7 @@ export type ModelSkill = {
 
 export type SkillByCut = {
   model_id: string
+  scope: string
   cut_year: number
   n_test: number
   value_model: number
@@ -313,6 +314,92 @@ export type AftershockSequence = {
   predicted_high: number
 }
 
+export type Unprecedented = {
+  location_id: string
+  location_name: string
+  country: string
+  koppen: string
+  abs_lat: number
+  dias_evaluados: number
+  n_referencia: number
+  dias_esperados: number
+  dias_calor: number
+  dias_frio: number
+  dias_lluvia: number
+  razon_calor: number
+  razon_frio: number
+  razon_lluvia: number
+  asimetria_calor_frio: number | null
+  mayor_exceso_c: number | null
+  dias_calor_por_anio: number
+  patron: string
+}
+
+export type HazardCity = {
+  location_id: string
+  location_name: string
+  country: string
+  koppen: string
+  ciclones_200km: number
+  viento_max_kt: number | null
+  paso_mas_cercano_km: number | null
+  sismos_m5: number
+  magnitud_max: number | null
+  m6_mas_cercano_km: number | null
+  calor_amplificacion: number | null
+  calor_dias_por_anio: number | null
+  sin_precedente_razon: number | null
+  sin_precedente_dias: number | null
+  pct_ciclones: number
+  pct_sismos: number
+  pct_calor: number | null
+  pct_sin_precedente: number | null
+  dimensiones_disponibles: number
+  dimensiones_en_cuartil_alto: number
+}
+
+export type DengueProvince = {
+  location_id: string
+  departamento: string
+  provincia: string
+  temp_media_c: number | null
+  casos_total: number
+  semanas_con_casos: number
+  semanas_vigiladas: number
+  pct_semanas_con_casos: number
+  transmision: string
+  pico_semanal: number
+  precip_anual_mm: number | null
+}
+
+export type DengueLag = {
+  provincia: string
+  lag_semanas: number
+  n: number
+  r_temp: number | null
+  pct_varianza_temp: number | null
+  acf1_casos: number | null
+  n_efectivo: number
+  r_umbral_ingenuo: number
+  r_umbral_honesto: number
+  r_umbral_bonferroni: number
+  r_temp_entreno: number | null
+  r_temp_prueba: number | null
+  lag_plausible: boolean
+  aguanta_fuera_de_muestra: boolean | null
+}
+
+export type DengueSkill = {
+  model_id: string
+  provincia: string
+  improvement_median: number
+  improvement_min: number
+  improvement_max: number
+  n_cuts: number
+  bate_esta_linea_base: boolean
+  should_display: boolean
+}
+
 export const api = {
   health: () =>
     get<{ status: string; freshness: Record<string, string | null> }>('/health'),
@@ -368,6 +455,31 @@ export const api = {
       por_que_publicarlos: string
       de_donde_salen: string
     }>('/patterns/nulls'),
+  unprecedented: () =>
+    get<{
+      cities: Unprecedented[]
+      que_significa: string
+      por_que_una_razon_y_no_un_recuento: string
+      la_prueba: string
+      limitaciones: string
+    }>('/patterns/unprecedented'),
+  hazardProfile: () =>
+    get<{
+      cities: HazardCity[]
+      por_que_no_hay_un_indice: string
+      esto_es_peligro_no_riesgo: string
+      sobre_los_percentiles: string
+    }>('/prevention/hazard-profile'),
+  dengue: () =>
+    get<{
+      provincias: DengueProvince[]
+      correlaciones_por_retardo: DengueLag[]
+      habilidad_predictiva: DengueSkill[]
+      que_hay_aqui: string
+      que_no_demuestra: string
+      y_predecir: string
+      para_que_sirve_entonces: string
+    }>('/health/dengue'),
   heatThresholds: () =>
     get<{
       cities: HeatThreshold[]
