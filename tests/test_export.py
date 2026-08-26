@@ -29,9 +29,22 @@ def exported(tmp_path_factory, warehouse_required) -> Path:
 
 class TestExportacion:
     def test_escribe_las_rutas_esperadas(self, exported: Path):
-        for ruta in ("locations", "models/skill", "patterns/warming",
-                     "panels/coverage", "manifest"):
-            assert (exported / f"{ruta}.json").exists(), f"falta {ruta}.json"
+        """TODAS las rutas declaradas, no una muestra.
+
+        Antes comprobaba cinco de veintiocho escritas a mano. Una ruta nueva
+        que fallara al exportarse habría pasado desapercibida, y una retirada
+        que siguiera publicándose también.
+        """
+        from appclima.api import export as exportador
+
+        declaradas = set(exportador._routes())
+        escritas = {
+            str(f.relative_to(exported))[:-5]
+            for f in exported.rglob("*.json")
+        }
+        faltan = declaradas - escritas
+        assert not faltan, f"rutas declaradas que no se exportaron: {sorted(faltan)}"
+        assert (exported / "manifest.json").exists()
 
     def test_el_manifiesto_declara_lo_exportado(self, exported: Path):
         manifest = json.loads((exported / "manifest.json").read_text())

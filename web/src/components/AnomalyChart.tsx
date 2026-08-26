@@ -31,7 +31,17 @@ export function AnomalyChart({ data }: { data: Anomaly[] }) {
   )
 
   if (rows.length === 0) {
-    return <p className="loading">Sin datos de anomalía para esta ubicación.</p>
+    // Decir "sin datos" a secas invita a pensar que algo se rompió. La causa
+    // es concreta y vale la pena contarla: una anomalía necesita una normal
+    // contra la que comparar, y esa normal son veinte años de reanálisis que
+    // solo se han descargado para 30 de las 66 ciudades.
+    return (
+      <p className="loading">
+        Esta ciudad todavía no tiene archivo histórico, y sin él no hay «normal»
+        contra la que comparar: la anomalía no se puede calcular. Elige una del
+        grupo «con 20 años de archivo» del selector.
+      </p>
+    )
   }
 
   const y = linearScale(domain, [H - M.bottom, M.top])

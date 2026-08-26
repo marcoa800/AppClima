@@ -80,6 +80,18 @@ app.add_middleware(
 )
 
 
+def _es(valor: float | int) -> str:
+    """Formatea un número al uso español: miles con punto, decimales con coma.
+
+    Existe porque la alternativa —un `.replace(",", ".")` sobre la frase ya
+    montada— también reemplaza las comas de la prosa. Lo hice y dejó frases como
+    "responde a '¿es distinto de cero?'. no a '¿importa?'".
+    """
+    if isinstance(valor, int) or float(valor).is_integer():
+        return f"{int(valor):,}".replace(",", ".")
+    return f"{valor:,}".replace(",", "\x00").replace(".", ",").replace("\x00", ".")
+
+
 def _query(sql: str, params: list[Any] | None = None) -> list[dict]:
     """Ejecuta SQL y devuelve una lista de diccionarios lista para serializar."""
     if _con is None:
@@ -327,19 +339,35 @@ def omori(min_sequence: Annotated[int, Query(ge=1, le=1000)] = 20) -> dict:
 
 @app.get("/patterns/seismic-weather-myth", summary="Contraste del 'clima sísmico'")
 def seismic_weather_myth() -> dict:
+    results = _query("""
+        SELECT location_id, n_days, total_quakes, pct_days_with_quake,
+               r_pressure, r_temperature, r_significance_threshold,
+               pressure_significant, pct_variance_explained
+        FROM gold_quake_pressure_test ORDER BY total_quakes DESC, location_id
+    """)
+
+    # Las cifras del texto se calculan, no se escriben. Esta misma frase decía
+    # "n=87.654 días" y "0,014% de la varianza": eran ciertas cuando había 49
+    # ciudades y dejaron de serlo al pasar a 66, sin que nada avisara. Un número
+    # dentro de una cadena no lo comprueba ningún test y no lo recalcula ningún
+    # build — envejece en silencio y con aspecto de dato.
+    pooled = next((r for r in results if r["location_id"] == "POOLED"), None)
+
     return {
-        "results": _query("""
-            SELECT location_id, n_days, total_quakes, pct_days_with_quake,
-                   r_pressure, r_temperature, r_significance_threshold,
-                   pressure_significant, pct_variance_explained
-            FROM gold_quake_pressure_test ORDER BY total_quakes DESC, location_id
-        """),
+        "results": results,
         "interpretation": (
-            "No hay relación práctica. Con n=87.654 días el umbral de "
-            "significación cae a r=0,0066, así que correlaciones de 0,01 salen "
-            "'significativas' explicando el 0,014% de la varianza. La "
-            "significación estadística responde a '¿es distinto de cero?', no a "
-            "'¿importa?'. Un resultado nulo bien medido es un resultado."
+            "No hay relación práctica. "
+            + (
+                f"Con n={_es(pooled['n_days'])} días el umbral de significación "
+                f"cae a r={_es(pooled['r_significance_threshold'])}, así que una "
+                f"correlación de {_es(pooled['r_pressure'])} sale 'significativa' "
+                f"explicando el {_es(pooled['pct_variance_explained'])}% de la "
+                "varianza. "
+                if pooled
+                else ""
+            )
+            + "La significación estadística responde a '¿es distinto de cero?', "
+            "no a '¿importa?'. Un resultado nulo bien medido es un resultado."
         ),
     }
 
@@ -1090,9 +1118,10 @@ def model_skill() -> dict:
             "se publica."
         ),
         "por_que_la_mediana": (
-            "El riesgo de calor corregido declaraba +16,9% medido en un solo "
+            "El riesgo de calor corregido llegó a declarar +16,9% medido en un solo "
             "corte (2018/2019). Evaluado sobre cinco cortes su mediana es "
-            "+3,5%, por debajo del umbral. La diferencia no está en el modelo: "
+            "+1,45% con el archivo climático ya corregido, muy por debajo del "
+            "umbral, y su peor corte sale negativo. La diferencia no está en el modelo: "
             "está en lo caliente que salió el periodo de prueba elegido."
         ),
     }

@@ -316,11 +316,29 @@ export default function App() {
           value={locationId}
           onChange={(event) => setLocationId(event.target.value)}
         >
-          {global.locations.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name} ({l.country}) {l.has_climatology ? '· 20 años' : ''}
-            </option>
-          ))}
+          {/* Agrupado y no en una lista plana. De las 66 ciudades del
+              catálogo, solo 30 tienen los veinte años de archivo que la
+              anomalía necesita: las otras 36 llevaban a un gráfico en blanco
+              con una etiqueta discreta como única pista. Un optgroup lo dice
+              antes de hacer clic, que es cuando sirve. */}
+          <optgroup label="Con 20 años de archivo">
+            {global.locations
+              .filter((l) => l.has_climatology)
+              .map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name} ({l.country})
+                </option>
+              ))}
+          </optgroup>
+          <optgroup label="Sin archivo histórico todavía">
+            {global.locations
+              .filter((l) => !l.has_climatology)
+              .map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name} ({l.country})
+                </option>
+              ))}
+          </optgroup>
         </select>
         {selected && (
           <>
@@ -416,9 +434,9 @@ export default function App() {
         </p>
         <MythTable rows={global.myth} />
         <p className="caveat">
-          Mira las dos últimas columnas juntas. Con 87.654 días, el umbral de
+          Mira las dos últimas columnas juntas. Con más de doscientos mil días, el umbral de
           significación estadística cae a r = 0,0066, así que una correlación de
-          0,01 sale «significativa» explicando el 0,014% de la varianza. La
+          0,03 sale «significativa» explicando menos del 0,1% de la varianza. La
           significación responde a «¿es distinto de cero?», no a «¿importa?». Con
           datos suficientes, todo es distinto de cero. Aquí no hay relación
           práctica — y un resultado nulo bien medido también es un resultado.
@@ -595,7 +613,7 @@ export default function App() {
         <p className="caveat">
           Esta tabla existe porque tres hipótesis que parecían tener señal la
           perdieron al verificarlas. El riesgo de calor corregido declaraba
-          +16,9% medido en un solo corte; su mediana sobre cinco es +3,5%, y por
+          +16,9% medido en un solo corte; su mediana sobre cinco es +1,45%, y por
           eso queda retenido. La diferencia no está en el modelo: está en lo
           caliente que resultó el periodo de prueba que se eligiera. El criterio
           de publicación vive en los datos, no en el frontend — para que la

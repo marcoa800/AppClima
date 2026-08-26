@@ -22,7 +22,22 @@ WITH tsunamis AS (
     SELECT
         source_id AS tsunami_id,
         year, month, day, event_date, country, location_name,
-        deaths_best AS tsunami_deaths,
+        -- `deaths` y NO `deaths_best`. La distinción decide si esta tabla
+        -- dice algo o miente.
+        --
+        -- `deaths_best` es coalesce(deaths_total, deaths), y está bien para lo
+        -- que se creó: rankear desastres por impacto total, donde Krakatoa son
+        -- 36.417 muertes y no 2.000. Pero en la ficha de un TSUNAMI, NOAA
+        -- rellena `deaths_total` con las víctimas del evento entero —sismo
+        -- incluido— así que usarlo aquí atribuye al tsunami lo que mató el
+        -- terremoto.
+        --
+        -- El tsunami de Haití de 2010 mató a 7 personas y el terremoto a
+        -- 316.000. Esta tabla decía que el tsunami mató a 316.000, y no era un
+        -- caso aislado: 631 de 654 filas tenían tsunami_deaths idéntico a
+        -- trigger_deaths_total, que es firma de error de columna y no una
+        -- coincidencia.
+        deaths AS tsunami_deaths,
         tsunami_max_water_height_m AS max_wave_m,
         tsunami_num_runups AS runups,
         caused_earthquake_id
@@ -71,6 +86,11 @@ SELECT
     -- Qué proporción de las muertes totales puso el peligro secundario.
     -- Cerca de 1 significa que el desencadenante fue casi inofensivo por sí
     -- mismo y lo devastador fue lo que vino después.
+    --
+    -- Se calcula restando las directas al total del desencadenante, y no
+    -- dividiendo `tsunami_deaths` entre el total: las dos cifras vienen de
+    -- fichas distintas de NOAA y no siempre suman: dividirlas daría cocientes
+    -- mayores que uno sin que nada fallara.
     CASE
         WHEN trigger_deaths_total > 0
         THEN round(

@@ -133,7 +133,7 @@ NULL_FINDINGS: list[NullFinding] = [
               "anuncian los sismos.",
         verdict="No hay ninguna relación práctica.",
         statistic="r = 0,012 entre sismos diarios en 500 km y presión "
-                  "atmosférica, sobre 87.654 días-ciudad. Explica el 0,014% de "
+                  "atmosférica, sobre 219.126 días-ciudad. Explica el 0,077% de "
                   "la varianza. Tokio, con la mayor muestra (1.903 sismos), da "
                   "r = −0,002.",
         why_solid="La muestra es enorme y el resultado es consistente ciudad a "
@@ -141,7 +141,7 @@ NULL_FINDINGS: list[NullFinding] = [
                   "por esfuerzo tectónico acumulado durante siglos, y las "
                   "variaciones de presión son cinco órdenes de magnitud "
                   "menores que lo que rompe una falla.",
-        lesson="Con n = 87.654 el umbral de significación cae a r = 0,0066, así "
+        lesson="Con n = 219.126 el umbral de significación cae a r = 0,0042, así "
                "que una correlación irrelevante sale «estadísticamente "
                "significativa». La significación responde a «¿es distinto de "
                "cero?», no a «¿importa?». Por eso la varianza explicada va "
@@ -308,9 +308,9 @@ NULL_FINDINGS: list[NullFinding] = [
         domain="predicción",
         claim="Corregir la climatología por la tendencia de cada ciudad mejora "
               "el pronóstico de calor extremo.",
-        verdict="Retenido. La mejora cae de +16,9% a +3,5% al medirla en cinco "
+        verdict="No se publica. La mejora cae de +16,9% a +1,45% al medirla en cinco "
                 "cortes en vez de uno, y el mecanismo declarado es falso.",
-        statistic="Mediana de Brier Skill Score +3,5% sobre 5 cortes "
+        statistic="Mediana de Brier Skill Score +1,45% sobre 5 cortes, con el peor en -0,34% "
                   "temporales, con rango de +1,9% a +6,0%. Por debajo del "
                   "umbral de publicación del proyecto.",
         why_solid="Permutando las pendientes entre ciudades —dándole a Madrid "

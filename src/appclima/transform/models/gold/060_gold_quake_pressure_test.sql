@@ -88,9 +88,16 @@ SELECT
 
     -- Y aquí la columna que desmonta la anterior.
     --
-    -- Con n = 87.654 días, el umbral de significación baja a r = 0,0066. Eso
+    -- Con más de doscientos mil días-ciudad, el umbral de significación baja
+    -- por debajo de r = 0,005. Eso
     -- significa que una correlación de 0,012 sale "estadísticamente
-    -- significativa" — y explica el 0,014% de la varianza. Es decir: nada.
+    -- significativa" — y explica menos del 0,1% de la varianza. Es decir: nada.
+    --
+    -- Los valores exactos NO se escriben aquí a propósito: crecen con el
+    -- catálogo. Este comentario decía 87.654 días y 0,014%, ciertos con 49
+    -- ciudades y falsos con 66, sin que nada avisara. La columna
+    -- `pct_variance_explained` lleva la cifra viva; el comentario solo el
+    -- orden de magnitud, que sí aguanta.
     --
     -- Es la trampa clásica de la muestra gigante: la significación estadística
     -- mide "¿es distinto de cero?", no "¿importa?". Con suficientes datos,
