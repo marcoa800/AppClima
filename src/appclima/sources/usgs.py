@@ -25,6 +25,11 @@ from appclima.schemas.quakes import Earthquake
 
 log = logging.getLogger(__name__)
 
+# Id en el catálogo de atribución. Lo lee `test_atribucion` recorriendo
+# el paquete: así, añadir un conector sin su entrada de licencia rompe
+# los tests en vez de publicarse sin atribuir.
+SOURCE_ID = "usgs"
+
 QUERY_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 
 # Límite duro de la API. Nos quedamos por debajo para tener margen.

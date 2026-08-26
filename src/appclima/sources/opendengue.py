@@ -52,6 +52,11 @@ from appclima.schemas.health import DengueWeek
 
 log = logging.getLogger(__name__)
 
+# Id en el catálogo de atribución. Lo lee `test_atribucion` recorriendo
+# el paquete: así, añadir un conector sin su entrada de licencia rompe
+# los tests en vez de publicarse sin atribuir.
+SOURCE_ID = "opendengue"
+
 RELEASE = "V1_3"
 BASE_URL = (
     "https://github.com/OpenDengue/master-repo/raw/main/data/releases/V1.3"

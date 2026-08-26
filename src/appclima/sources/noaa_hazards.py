@@ -28,6 +28,11 @@ from appclima.schemas.disasters import HistoricalDisaster
 
 log = logging.getLogger(__name__)
 
+# Id en el catálogo de atribución. Lo lee `test_atribucion` recorriendo
+# el paquete: así, añadir un conector sin su entrada de licencia rompe
+# los tests en vez de publicarse sin atribuir.
+SOURCE_ID = "noaa-ncei"
+
 BASE_URL = "https://www.ngdc.noaa.gov/hazel/hazard-service/api/v1"
 
 ENDPOINTS: dict[str, str] = {

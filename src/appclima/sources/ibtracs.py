@@ -36,6 +36,11 @@ from appclima.schemas.cyclones import CycloneTrackPoint
 
 log = logging.getLogger(__name__)
 
+# Id en el catálogo de atribución. Lo lee `test_atribucion` recorriendo
+# el paquete: así, añadir un conector sin su entrada de licencia rompe
+# los tests en vez de publicarse sin atribuir.
+SOURCE_ID = "ibtracs"
+
 BASE_URL = (
     "https://www.ncei.noaa.gov/data/"
     "international-best-track-archive-for-climate-stewardship-ibtracs/"

@@ -27,6 +27,11 @@ from appclima.schemas.weather import CORE_VARIABLES, HOURLY_VARIABLES, WeatherHo
 
 log = logging.getLogger(__name__)
 
+# Id en el catálogo de atribución. Lo lee `test_atribucion` recorriendo
+# el paquete: así, añadir un conector sin su entrada de licencia rompe
+# los tests en vez de publicarse sin atribuir.
+SOURCE_ID = "open-meteo"
+
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 

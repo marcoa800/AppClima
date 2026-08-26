@@ -24,6 +24,11 @@ from appclima.schemas.population import PopulationYear
 
 log = logging.getLogger(__name__)
 
+# Id en el catálogo de atribución. Lo lee `test_atribucion` recorriendo
+# el paquete: así, añadir un conector sin su entrada de licencia rompe
+# los tests en vez de publicarse sin atribuir.
+SOURCE_ID = "worldbank"
+
 BASE_URL = "https://api.worldbank.org/v2"
 
 INDICATORS: dict[str, str] = {

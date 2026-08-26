@@ -33,6 +33,11 @@ from appclima.schemas.population import OniValue
 
 log = logging.getLogger(__name__)
 
+# Id en el catálogo de atribución. Lo lee `test_atribucion` recorriendo
+# el paquete: así, añadir un conector sin su entrada de licencia rompe
+# los tests en vez de publicarse sin atribuir.
+SOURCE_ID = "noaa-cpc"
+
 ONI_URL = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
 
 # Orden de los trimestres solapados dentro del año, para poder ordenar la serie.

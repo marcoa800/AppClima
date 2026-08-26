@@ -42,24 +42,65 @@ class TestAtribucion:
             )
 
     def test_el_catalogo_cubre_las_fuentes_que_se_ingieren(self):
-        """Si se añade un conector y no su atribución, este test lo caza."""
-        from appclima.sources import (  # noqa: F401
-            ebird,
-            enso,
-            gbif,
-            ibtracs,
-            noaa_hazards,
-            open_meteo,
-            usgs,
-            worldbank,
+        """Todo conector debe tener su entrada de licencia. Sin excepciones.
+
+        **Este test existía y no servía.** Comparaba el catálogo contra una
+        lista de ids escrita a mano, así que añadir un conector nuevo lo dejaba
+        pasando en vacío: su docstring prometía cazar lo que no miraba.
+
+        Se descubrió con OpenDengue. Estuvo publicando datos CC BY 4.0 —que
+        exigen cita— sin aparecer en `/sources`, y ningún test se quejó porque
+        la lista no lo incluía.
+
+        Ahora se recorre el paquete `appclima.sources` de verdad. Cada módulo
+        declara su `SOURCE_ID`, así que un conector nuevo sin entrada de
+        licencia rompe los tests en lugar de publicarse sin atribuir.
+        """
+        import importlib
+        import pkgutil
+
+        import appclima.sources as paquete
+
+        sin_declarar: list[str] = []
+        sin_catalogo: list[str] = []
+
+        for modulo in pkgutil.iter_modules(paquete.__path__):
+            mod = importlib.import_module(f"appclima.sources.{modulo.name}")
+            source_id = getattr(mod, "SOURCE_ID", None)
+            if source_id is None:
+                sin_declarar.append(modulo.name)
+            elif source_id not in SOURCE_BY_ID:
+                sin_catalogo.append(f"{modulo.name} → {source_id}")
+
+        assert not sin_declarar, (
+            "conectores sin SOURCE_ID, así que nadie vigila su atribución: "
+            f"{sin_declarar}"
+        )
+        assert not sin_catalogo, (
+            f"conectores sin entrada en el catálogo de licencias: {sin_catalogo}"
         )
 
-        esperadas = {
-            "open-meteo", "usgs", "ebird", "noaa-ncei",
-            "ibtracs", "worldbank", "noaa-cpc", "gbif",
-        }
-        assert esperadas <= set(SOURCE_BY_ID), (
-            f"faltan en el catálogo: {esperadas - set(SOURCE_BY_ID)}"
+    def test_las_fuentes_con_datos_en_bronze_estan_atribuidas(self, warehouse):
+        """La comprobación que mira lo PUBLICADO, no lo importado.
+
+        Un módulo puede existir sin haberse ejecutado nunca, y al revés: bronze
+        puede tener datos de una integración que se hizo a mano. Lo que obliga
+        a atribuir no es tener el código, es servir el dato.
+        """
+        from appclima.config import settings
+
+        alias = {"curated": "curated", "noaa": "noaa-ncei", "noaa_cpc": "noaa-cpc"}
+        bronze = settings.bronze_dir
+        if not bronze.exists():
+            pytest.skip("sin bronze local")
+
+        publicadas = {d.name for d in bronze.iterdir() if d.is_dir()}
+        sin_atribuir = [
+            f for f in publicadas
+            if alias.get(f, f.replace("_", "-")) not in SOURCE_BY_ID
+        ]
+        assert not sin_atribuir, (
+            f"hay datos en bronze de fuentes sin atribución: {sin_atribuir}"
         )
 
     def test_toda_fuente_dice_qué_se_usa_de_ella(self):

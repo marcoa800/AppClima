@@ -28,6 +28,11 @@ from appclima.schemas.phenology import PhenologyYear
 
 log = logging.getLogger(__name__)
 
+# Id en el catálogo de atribución. Lo lee `test_atribucion` recorriendo
+# el paquete: así, añadir un conector sin su entrada de licencia rompe
+# los tests en vez de publicarse sin atribuir.
+SOURCE_ID = "gbif"
+
 BASE_URL = "https://api.gbif.org/v1"
 
 # Migradoras de larga distancia bien cubiertas en GBIF. Se eligen especies

@@ -48,8 +48,8 @@ SOURCES: list[DataSource] = [
         attribution_required=True,
         citation="Datos meteorológicos de Open-Meteo.com (CC BY 4.0), "
                  "basados en el reanálisis ERA5 de Copernicus / ECMWF.",
-        what_we_use="Pronóstico horario de 49 ciudades y 20 años de reanálisis "
-                    "ERA5 en 12 de ellas.",
+        what_we_use="Pronóstico horario de 66 ciudades y 20 años de reanálisis "
+                    "ERA5 en 30 de ellas.",
         note="**El límite que condiciona el proyecto.** El uso gratuito es solo "
              "no comercial, e incluye publicidad y patrocinios. Monetizar de "
              "cualquier forma obliga a plan de pago (~29 €/mes) o a autoalojar "
@@ -132,6 +132,31 @@ SOURCES: list[DataSource] = [
              "la lista exacta de datasets y publicadores. Es lo que habría que "
              "hacer antes de publicar cualquier resultado basado en GBIF. "
              "Además, algunos datasets subyacentes son CC BY-NC.",
+    ),
+    DataSource(
+        id="opendengue",
+        name="OpenDengue",
+        organization="London School of Hygiene & Tropical Medicine",
+        url="https://opendengue.org",
+        license="CC BY 4.0",
+        commercial_use="permitido",
+        attribution_required=True,
+        # La cita formal que pide la licencia. Va literal, con el DOI implícito
+        # en la referencia: CC BY 4.0 obliga a reconocer la autoría, y un
+        # "datos de OpenDengue" a secas no cumple.
+        citation="Clarke J, Lim A, Gupte P, Pigott DM, van Panhuis WG, "
+                 "Brady OJ. A global dataset of publicly available dengue case "
+                 "count data. Scientific Data 11, 296 (2024). OpenDengue "
+                 "v1.3 (CC BY 4.0).",
+        what_we_use="Vigilancia semanal de dengue: serie nacional de 129 países "
+                    "y 18 provincias del Perú entre 2000 y 2023.",
+        note="Para Perú, lo que hay dentro son los boletines del CDC-MINSA que "
+             "alimentan la sala situacional de metaxénicas. Se usa esta vía y "
+             "no el portal nacional porque datosabiertos.gob.pe responde 418 a "
+             "clientes automatizados y la sala situacional es una app Shiny "
+             "que habla por websocket. La versión está fijada a la v1.3: "
+             "OpenDengue revisa años enteros retroactivamente, así que «la "
+             "última» no sería reproducible.",
     ),
     DataSource(
         id="worldbank",
