@@ -400,6 +400,115 @@ export type DengueSkill = {
   should_display: boolean
 }
 
+export type EnsoBasin = {
+  basin: string
+  phase: string
+  seasons: number
+  ace_mean: number | null
+  hurricanes_mean: number | null
+  major_hurricanes_mean: number | null
+  systems_mean: number | null
+  r_oni_vs_ace: number | null
+}
+
+export type PanelColumn = {
+  panel: string
+  column_name: string
+  first_year: number | null
+  last_year: number | null
+  n_observations: number
+  acf1: number | null
+  n_effective: number
+  r_threshold_naive: number | null
+  r_threshold_honest: number | null
+  naive_underestimates_by: number | null
+  analyzable: boolean
+  verdict: string
+}
+
+export type HeatwaveCell = {
+  anomaly_bucket: string
+  enso_bucket: string
+  n_train: number
+  n_extreme: number
+  p_extreme: number
+  base_rate: number
+  lift: number
+}
+
+export type HeatwaveBacktest = {
+  scope: string
+  n_test: number
+  n_extreme: number
+  observed_rate: number
+  brier_model: number
+  brier_base: number
+  brier_skill_score: number
+  pct_improvement: number
+  beats_climatology: boolean
+}
+
+export type PerCapitaEvent = {
+  family: string
+  event_name: string
+  subtype: string | null
+  year: number
+  deaths_representative: number
+  world_population: number
+  deaths_per_million: number
+  one_in_every: number | null
+  pct_of_humanity: number
+  estimate_kind: string
+}
+
+export type Epidemic = {
+  id: string
+  name: string
+  pathogen: string | null
+  disease: string
+  start_year: number
+  end_year: number | null
+  ongoing: boolean
+  duration_years: number | null
+  deaths_low: number
+  deaths_high: number
+  deaths_mid: number
+  deaths_uncertainty_ratio: number
+  regions: string
+  estimate_confidence: string
+  century: number
+}
+
+export type HistoricalEvent = {
+  id: string
+  name: string
+  category: string
+  start_year: number
+  end_year: number | null
+  duration_years: number | null
+  is_point_event: boolean
+  description: string
+  relevance: string
+}
+
+export type CenturyCoverage = {
+  century: number
+  events: number
+  events_with_exact_deaths: number
+  pct_with_exact_deaths: number
+  deaths_counted: number | null
+}
+
+export type WorldPopulationPoint = {
+  year: number
+  population_low: number
+  population_high: number
+  population_mid: number
+  uncertainty_ratio: number
+  is_anchor: boolean
+  confidence: string
+}
+
 export const api = {
   health: () =>
     get<{ status: string; freshness: Record<string, string | null> }>('/health'),
@@ -455,6 +564,38 @@ export const api = {
       por_que_publicarlos: string
       de_donde_salen: string
     }>('/patterns/nulls'),
+  enso: () =>
+    get<{ by_basin: EnsoBasin[]; oni_recent: unknown[]; finding: string }>(
+      '/patterns/enso',
+    ),
+  panelCoverage: () =>
+    get<{ columns: PanelColumn[]; como_usarlo: string; por_que: string }>(
+      '/panels/coverage',
+    ),
+  heatwave: () =>
+    get<{
+      model: HeatwaveCell[]
+      backtest: HeatwaveBacktest[]
+      design: string
+      finding: string
+      why_tropics: string
+    }>('/predict/heatwave'),
+  perCapita: () =>
+    get<{ events: PerCapitaEvent[]; finding: string; caveat: string }>(
+      '/patterns/per-capita',
+    ),
+  epidemics: () =>
+    get<{ epidemics: Epidemic[]; provenance: string; how_to_read: string }>(
+      '/epidemics',
+    ),
+  historicalEvents: () =>
+    get<{ events: HistoricalEvent[]; note: string }>('/events'),
+  disastersByCentury: () =>
+    get<{ by_century: CenturyCoverage[]; warning: string }>(
+      '/disasters/by-century',
+    ),
+  worldPopulation: () =>
+    get<{ series: WorldPopulationPoint[]; note: string }>('/population/world'),
   unprecedented: () =>
     get<{
       cities: Unprecedented[]

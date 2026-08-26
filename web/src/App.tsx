@@ -8,10 +8,16 @@ import {
   type Cascade,
   type CycloneSeason,
   type CycloneTrend,
+  type CenturyCoverage as CenturyRow,
   type DeadliestEvent,
   type DengueLag,
   type DengueProvince,
   type DengueSkill,
+  type Epidemic,
+  type EnsoBasin,
+  type HeatwaveBacktest,
+  type HeatwaveCell,
+  type HistoricalEvent,
   type DataSource,
   type ModelSkill,
   type AftershockSequence,
@@ -22,10 +28,13 @@ import {
   type Location,
   type MagnitudeBin,
   type MythRow,
+  type PanelColumn,
+  type PerCapitaEvent,
   type OmoriDay,
   type Sequence,
   type Unprecedented,
   type WarmingYear,
+  type WorldPopulationPoint,
 } from './api'
 import { AnomalyChart } from './components/AnomalyChart'
 import { BirdEffortChart } from './components/BirdEffortChart'
@@ -41,6 +50,14 @@ import { HeatThresholds } from './components/HeatThresholds'
 import { UnprecedentedDays } from './components/UnprecedentedDays'
 import { HazardProfile } from './components/HazardProfile'
 import { DengueClimate } from './components/DengueClimate'
+import { EnsoBasins } from './components/EnsoBasins'
+import { PanelCoverage } from './components/PanelCoverage'
+import { HeatwaveModel } from './components/HeatwaveModel'
+import { PerCapitaTable } from './components/PerCapitaTable'
+import { EpidemicsTable } from './components/EpidemicsTable'
+import { CenturyCoverage } from './components/CenturyCoverage'
+import { WorldPopulationChart } from './components/WorldPopulationChart'
+import { HistoricalEvents } from './components/HistoricalEvents'
 import { MythTable } from './components/MythTable'
 import { OmoriChart } from './components/OmoriChart'
 
@@ -78,6 +95,27 @@ type Global = {
   dengueNotProven: string
   denguePredict: string
   dengueUseful: string
+  enso: EnsoBasin[]
+  ensoFinding: string
+  panelCols: PanelColumn[]
+  panelHow: string
+  panelWhy: string
+  heatwave: HeatwaveCell[]
+  heatwaveBacktest: HeatwaveBacktest[]
+  heatwaveDesign: string
+  heatwaveFinding: string
+  heatwaveTropics: string
+  perCapita: PerCapitaEvent[]
+  perCapitaFinding: string
+  perCapitaCaveat: string
+  epidemics: Epidemic[]
+  epidemicsHow: string
+  centuries: CenturyRow[]
+  centuriesWarning: string
+  worldPop: WorldPopulationPoint[]
+  worldPopNote: string
+  histEvents: HistoricalEvent[]
+  histEventsNote: string
   aftershocks: AftershockSequence[]
   aftershockAvisos: string[]
   sources: DataSource[]
@@ -108,6 +146,14 @@ export default function App() {
       api.birdsSummary(),
       api.modelSkill(),
       api.heatThresholds(),
+      api.enso(),
+      api.panelCoverage(),
+      api.heatwave(),
+      api.perCapita(),
+      api.epidemics(),
+      api.disastersByCentury(),
+      api.worldPopulation(),
+      api.historicalEvents(),
       api.unprecedented(),
       api.hazardProfile(),
       api.dengue(),
@@ -115,7 +161,7 @@ export default function App() {
       api.sources(),
       api.health(),
     ])
-      .then(([locations, warming, gr, omori, myth, deadliest, cascades, cyclones, birds, skill, heat, unprec, hazard, dengue, after, sources, health]) =>
+      .then(([locations, warming, gr, omori, myth, deadliest, cascades, cyclones, birds, skill, heat, enso, panelCov, hw, perCap, epi, cent, wpop, hev, unprec, hazard, dengue, after, sources, health]) =>
         setGlobal({
           locations,
           warming: warming.by_year,
@@ -136,6 +182,27 @@ export default function App() {
           heatCorr: heat.variability_correlation.r,
           heatWho: heat.quien_sufre_mas,
           heatLimits: heat.limitaciones,
+          enso: enso.by_basin,
+          ensoFinding: enso.finding,
+          panelCols: panelCov.columns,
+          panelHow: panelCov.como_usarlo,
+          panelWhy: panelCov.por_que,
+          heatwave: hw.model,
+          heatwaveBacktest: hw.backtest,
+          heatwaveDesign: hw.design,
+          heatwaveFinding: hw.finding,
+          heatwaveTropics: hw.why_tropics,
+          perCapita: perCap.events,
+          perCapitaFinding: perCap.finding,
+          perCapitaCaveat: perCap.caveat,
+          epidemics: epi.epidemics,
+          epidemicsHow: epi.how_to_read,
+          centuries: cent.by_century,
+          centuriesWarning: cent.warning,
+          worldPop: wpop.series,
+          worldPopNote: wpop.note,
+          histEvents: hev.events,
+          histEventsNote: hev.note,
           unprecedented: unprec.cities,
           unprecedentedProof: unprec.la_prueba,
           unprecedentedWhy: unprec.por_que_una_razon_y_no_un_recuento,
@@ -398,6 +465,59 @@ export default function App() {
       </section>
 
 
+
+      <section className="card">
+        <h2>El denominador: una de cada tres personas</h2>
+        <p className="note">
+          Todas las cifras de víctimas son absolutas, y eso engaña siempre en la
+          misma dirección: parecen peores los desastres recientes, porque había
+          más gente disponible para morir. Shaanxi mató a 830.000 personas en
+          1556 y Tangshan a 242.769 en 1976 — pero en proporción, Shaanxi fue
+          casi veintiocho veces más letal.
+        </p>
+        <PerCapitaTable events={global.perCapita} />
+        <p className="caveat">{global.perCapitaFinding}</p>
+        <p className="caveat">{global.perCapitaCaveat}</p>
+        <WorldPopulationChart series={global.worldPop} />
+        <p className="caveat">{global.worldPopNote}</p>
+      </section>
+
+      <section className="card">
+        <h2>Epidemias: siempre un rango, nunca una cifra</h2>
+        <p className="note">
+          Las estimaciones de muertes de la peste negra van de 75 a 200 millones.
+          Publicar «137 millones» sugeriría una precisión que ninguna fuente
+          respalda, así que aquí la barra dibuja el intervalo entero: su anchura
+          <em> es</em> la incertidumbre.
+        </p>
+        <EpidemicsTable epidemics={global.epidemics} />
+        <p className="caveat">{global.epidemicsHow}</p>
+      </section>
+
+      <section className="card">
+        <h2>Cuánto sabemos de cada siglo</h2>
+        <p className="note">
+          Este gráfico no mide la historia: mide cuánto se conserva de ella. Está
+          aquí para desactivar la lectura equivocada de todas las series
+          históricas — «hay más desastres que antes» es, en su mayor parte,
+          «hay más registro que antes».
+        </p>
+        <CenturyCoverage centuries={global.centuries} />
+        <p className="caveat">{global.centuriesWarning}</p>
+      </section>
+
+      <section className="card">
+        <h2>Lo que cambió aquello que los datos miden</h2>
+        <p className="note">
+          No son catástrofes: son las razones por las que las series se comportan
+          como se comportan. La Revolución Industrial no aparece en ningún
+          catálogo de desastres y es la causa de la mitad de las tendencias de
+          este proyecto.
+        </p>
+        <HistoricalEvents events={global.histEvents} />
+        <p className="caveat">{global.histEventsNote}</p>
+      </section>
+
       <section className="card">
         <h2>¿Hay más ciclones tropicales que antes?</h2>
         <p className="note">
@@ -423,6 +543,20 @@ export default function App() {
         )}
       </section>
 
+
+      <section className="card">
+        <h2>El Niño y los ciclones: la señal que sí sobrevivió</h2>
+        <p className="note">
+          De todo lo que se contrastó en este proyecto, esta es de las pocas
+          relaciones que aguantó la verificación adversarial. Y aguanta{' '}
+          <strong>solo si no se promedia</strong>: El Niño dispara el Pacífico y
+          apaga el Atlántico, así que una media global daría casi cero. Sería una
+          cifra verdadera y completamente engañosa, porque las dos señales son
+          fuertes y opuestas.
+        </p>
+        <EnsoBasins basins={global.enso} />
+        <p className="caveat">{global.ensoFinding}</p>
+      </section>
 
       <section className="card">
         <h2>Aves: cuando el dato mide al observador, no a la naturaleza</h2>
@@ -469,6 +603,32 @@ export default function App() {
         </p>
       </section>
 
+
+
+      <section className="card">
+        <h2>Cuándo una correlación significa algo</h2>
+        <p className="note">
+          Esta tabla no enseña un resultado: enseña{' '}
+          <strong>cuánto hay que exigirle a un resultado antes de creérselo</strong>.
+          Una serie con memoria no aporta tantos datos independientes como filas
+          tiene — 918 meses del índice ONI valen 27— y el umbral de significación
+          se calcula con los que valen, no con los que hay.
+        </p>
+        <p className="note">{global.panelWhy}</p>
+        <PanelCoverage columns={global.panelCols} />
+        <p className="caveat">{global.panelHow}</p>
+      </section>
+
+      <section className="card">
+        <h2>Riesgo de calor extremo: qué añade saber la fase de El Niño</h2>
+        <p className="note">{global.heatwaveDesign}</p>
+        <HeatwaveModel
+          cells={global.heatwave}
+          backtest={global.heatwaveBacktest}
+        />
+        <p className="caveat">{global.heatwaveFinding}</p>
+        <p className="caveat">{global.heatwaveTropics}</p>
+      </section>
 
       <section className="card">
         <h2>Días para los que esta ciudad no tiene precedente</h2>
