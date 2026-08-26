@@ -514,10 +514,11 @@ de muestra. Mientras tanto el Pacífico occidental, con r = 0,73, la batió en u
 
 ## Licencia y atribución
 
-El **código** de este repositorio está bajo licencia MIT — ver `LICENSE`. Los
-**datos** no: conservan la licencia de cada fuente, y varias son más
-restrictivas que MIT. Quien tome el código y use las mismas fuentes hereda esas
-condiciones, que no son mías y no puedo levantar.
+El **código** está bajo licencia MIT — ver [`LICENSE`](LICENSE). Los **datos**
+no: conservan la licencia de cada fuente, y varias son más restrictivas que MIT.
+Quien tome el código y use las mismas fuentes hereda esas condiciones, que no son
+mías y no puedo levantar. El detalle está en
+[`DATA-LICENSES.md`](DATA-LICENSES.md).
 
 El catálogo completo vive en `src/appclima/attribution.py` y se sirve en
 `/sources`. Está en Python y no escrito a mano en el HTML por la misma razón que
