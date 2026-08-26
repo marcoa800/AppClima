@@ -972,6 +972,101 @@ def dengue() -> dict:
     }
 
 
+@app.get("/patterns/unprecedented", summary="Días sin precedente por ciudad")
+def unprecedented() -> dict:
+    """Días que superan todo lo registrado en su misma época del año.
+
+    La cifra que importa no es el recuento sino la razón contra lo esperado:
+    los récords se vuelven más raros con el tiempo aunque el clima no cambie.
+    """
+    return {
+        "cities": _query("""
+            SELECT location_id, location_name, country, koppen, abs_lat,
+                   dias_evaluados, n_referencia, dias_esperados,
+                   dias_calor, dias_frio, dias_lluvia,
+                   razon_calor, razon_frio, razon_lluvia,
+                   asimetria_calor_frio, mayor_exceso_c,
+                   dias_calor_por_anio, patron
+            FROM gold_unprecedented_weather
+            ORDER BY razon_calor DESC, location_id
+        """),
+        "que_significa": (
+            "Un día sin precedente supera todo lo registrado en su misma época "
+            "del año durante los trece años anteriores. Importa porque las "
+            "infraestructuras y los protocolos se calibran con lo vivido: un "
+            "valor nunca visto es, por definición, uno para el que nadie se "
+            "preparó."
+        ),
+        "por_que_una_razon_y_no_un_recuento": (
+            "Porque los récords se vuelven más raros con el tiempo aunque nada "
+            "cambie: con n valores previos, la probabilidad de que el "
+            "siguiente los supere todos es 1/(n+1). Contar récords y decir que "
+            "aumentan es una trampa estadística. Aquí se publica lo observado "
+            "dividido entre lo esperado bajo clima estacionario: 1,0 es lo "
+            "normal."
+        ),
+        "la_prueba": (
+            "Un clima más VARIABLE produciría más récords de calor y también "
+            "más de frío. Uno que se calienta produce más de calor y menos de "
+            "frío. Las 30 ciudades tienen más días de calor sin precedente de "
+            "los esperados, ninguna por debajo, y la razón de frío ronda 1. La "
+            "asimetría no depende de ninguna serie externa ni de ningún modelo "
+            "climático: solo de que el frío y el calor no se comporten igual."
+        ),
+        "limitaciones": (
+            "Los días consecutivos no son independientes —una ola de calor da "
+            "varios días seguidos— así que el recuento es correcto en "
+            "esperanza pero su varianza es mayor de lo que sugiere una "
+            "binomial. Por eso no se publica intervalo de confianza: haría "
+            "falta un bootstrap por bloques. Reikiavik es la excepción del "
+            "catálogo, con más récords de frío que de calor."
+        ),
+    }
+
+
+@app.get("/prevention/hazard-profile", summary="Perfil de peligro por ciudad")
+def hazard_profile() -> dict:
+    """Cuatro dimensiones de peligro, deliberadamente sin promediar."""
+    return {
+        "cities": _query("""
+            SELECT location_id, location_name, country, koppen,
+                   ciclones_200km, viento_max_kt, paso_mas_cercano_km,
+                   sismos_m5, magnitud_max, m6_mas_cercano_km,
+                   calor_amplificacion, calor_dias_por_anio,
+                   sin_precedente_razon, sin_precedente_dias,
+                   pct_ciclones, pct_sismos, pct_calor, pct_sin_precedente,
+                   dimensiones_disponibles, dimensiones_en_cuartil_alto
+            FROM gold_city_hazard_profile
+            ORDER BY dimensiones_en_cuartil_alto DESC, location_id
+        """),
+        "por_que_no_hay_un_indice": (
+            "Sumar exige pesos, y no existe forma defendible de decir cuántos "
+            "sismos de magnitud 6 equivalen a un ciclón de categoría 3 o a "
+            "quince días de calor sin precedente. Cualquier peso es una "
+            "opinión disfrazada de cálculo, y quien lo lea después no podrá "
+            "distinguir una de otra. Se publican las cuatro dimensiones por "
+            "separado; quien necesite un orden puede ponderarlas a la vista."
+        ),
+        "esto_es_peligro_no_riesgo": (
+            "Riesgo = peligro × exposición × vulnerabilidad, y aquí solo hay "
+            "lo primero. Tokio tiene uno de los peligros sísmicos más altos "
+            "del mundo y un riesgo comparativamente bajo, porque lleva décadas "
+            "construyendo para eso. Publicar peligro como si fuera riesgo "
+            "invertiría la conclusión justo donde más importa acertar. El "
+            "almacén no tiene datos de vulnerabilidad, así que la columna que "
+            "falta se nombra en vez de estimarse a ojo."
+        ),
+        "sobre_los_percentiles": (
+            "Son de este catálogo: 66 ciudades elegidas por cubrir climas y "
+            "regímenes distintos, no una muestra aleatoria del planeta. Un "
+            "percentil 90 aquí significa 'de las más expuestas de esta "
+            "lista'. Las dimensiones de calor solo existen donde hay veinte "
+            "años de archivo; `dimensiones_disponibles` dice sobre cuántas se "
+            "está hablando."
+        ),
+    }
+
+
 @app.get("/models/skill", summary="Habilidad medida de cada modelo")
 def model_skill() -> dict:
     return {
@@ -1062,6 +1157,25 @@ def aftershock_forecast(
             "Techo optimista: se entrena con el catálogo REVISADO. En tiempo "
             "real, a t+24 h, USGS aún no ha revisado casi nada y n1 será menor.",
         ],
+        # El aviso anterior era una advertencia cualitativa. Esto empieza a
+        # ponerle número: bronze es append-only, así que cada ejecución del
+        # cron deja una foto del catálogo y comparando la primera versión de
+        # cada evento con la última se mide cuánto se mueve.
+        "revision_del_catalogo": _query("""
+            SELECT mag_band, eventos, eventos_bajo_vigilancia, adiciones_tardias,
+                   pct_adicion_tardia, con_magnitud_revisada, revision_media_abs,
+                   dias_de_historia, historia_suficiente
+            FROM gold_catalog_revision
+        """),
+        "sobre_esa_medicion": (
+            "Cuánto cambia el catálogo después de publicarse, que es la "
+            "distancia entre el +56,6% medido y lo que daría en producción. "
+            "Solo cuentan los eventos ocurridos con la vigilancia ya en "
+            "marcha: los que entraron con el backfill histórico aparecerían "
+            "como 'añadidos tarde' por construcción. La serie empieza casi "
+            "vacía y se llena sola; `historia_suficiente` avisa de cuándo "
+            "empieza a ser creíble (30 días)."
+        ),
     }
 
 
