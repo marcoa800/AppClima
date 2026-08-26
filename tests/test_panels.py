@@ -245,9 +245,12 @@ class TestUmbralesDeCalor:
             SELECT count(*), sum(CASE WHEN amplification > 1 THEN 1 ELSE 0 END)
             FROM gold_heat_threshold_drift
         """).fetchone()
-        from appclima.locations import FLAGSHIP_IDS
-
-        assert n == len(FLAGSHIP_IDS)
+        # Igual que en la exportación: el umbral se calcula para toda ciudad
+        # con archivo, no para la lista de rollout.
+        con_archivo = con.execute(
+            "SELECT count(DISTINCT location_id) FROM gold_climatology"
+        ).fetchone()[0]
+        assert n == con_archivo
         # Proporción, no recuento: el catálogo de flagship crece y un mínimo
         # absoluto de 10 dejaría de significar lo mismo con 24 ciudades.
         assert por_encima >= 0.8 * n, (

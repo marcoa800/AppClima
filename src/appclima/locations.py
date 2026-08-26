@@ -319,10 +319,22 @@ BY_ID: dict[str, Location] = {loc.id: loc for loc in LOCATIONS}
 # 10 años sobre las 49 ciudades con las 14 variables equivale a ~38.000
 # llamadas ponderadas y no cabe en la cuota diaria de 10.000.
 #
-# Estas 12 cubren el espectro climático completo con la vigésima parte del
-# coste, y son las que permiten calcular una climatología de verdad (30 años)
-# para medir anomalías. El resto de ciudades tiene datos recientes, que es lo
-# que necesita la parte de "app".
+# Estas cubren el espectro climático completo con una fracción del coste, y son
+# las que permiten calcular una climatología de verdad para medir anomalías.
+#
+# **Ojo con lo que esta lista significa hoy.** Dice qué ciudades TOCA
+# descargar, no cuáles están descargadas, y las dos cifras ya no coinciden: el
+# archivo cubre 47 ciudades y esta lista tiene 30. Lo que decide si una ciudad
+# tiene anomalía es el DATO —`gold_climatology`, y de ahí `has_climatology`—,
+# nunca esta constante.
+#
+# La distinción importa porque `opendengue.flagship_countries()` sigue usándola
+# para decidir de qué países se ingiere dengue subnacional, y su regla dice
+# "países con 20 años de ERA5". Desde que Manaos, São Paulo y Bogotá tienen
+# archivo, esas dos cosas dejaron de ser lo mismo: Brasil y Colombia cumplen la
+# regla escrita pero no entran, porque la lista no se ha ampliado. Ampliarla
+# traería 2,1 millones de filas de dengue subnacional (~7 MB en bronze), que es
+# una decisión y no un efecto secundario.
 FLAGSHIP_IDS: tuple[str, ...] = (
     "utqiagvik",      # ET   — tundra ártica
     "yakutsk",        # Dfd  — continental extremo

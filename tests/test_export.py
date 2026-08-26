@@ -73,12 +73,22 @@ class TestExportacion:
             f"faltan {esperadas - anomalias}, sobran {anomalias - esperadas}"
         )
 
-    def test_la_climatologia_solo_existe_en_las_flagship(self, exported: Path):
-        """404 esperado en las otras 37: no es un fallo, es el diseño."""
-        from appclima.locations import FLAGSHIP_IDS
+    def test_la_climatologia_existe_donde_hay_archivo(self, exported: Path):
+        """Y solo ahí. Un 404 en las demás no es un fallo, es el diseño.
 
-        clim = list((exported / "climatology").glob("*.json"))
-        assert len(clim) == len(FLAGSHIP_IDS)
+        Se comprueba contra `locations.json`, que es el artefacto que el
+        cliente usa para decidir qué ofrecer. Antes se comparaba con
+        FLAGSHIP_IDS, que dice qué TOCABA descargar y no qué hay descargado:
+        las dos cifras dejaron de coincidir en cuanto se amplió el archivo de
+        30 a 47 ciudades, y el test cazó la divergencia — correctamente.
+        """
+        locations = json.loads((exported / "locations.json").read_text())
+        con_archivo = {x["id"] for x in locations if x["has_climatology"]}
+        exportadas = {f.stem for f in (exported / "climatology").glob("*.json")}
+
+        assert exportadas == con_archivo, (
+            f"sobran {exportadas - con_archivo}, faltan {con_archivo - exportadas}"
+        )
 
 
 class TestReproducibilidad:
