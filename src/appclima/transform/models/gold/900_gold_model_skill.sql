@@ -17,6 +17,10 @@
 -- `should_display` es el criterio de producto, y vive en los datos a propósito:
 -- si viviera en un `if` del frontend, la tentación de enseñar el número bonito
 -- acabaría ganando.
+--
+-- Numerado 900 para que se ejecute el último. Antes era el 230 y no podía
+-- juzgar a los modelos 280-300, que corren después: una tabla que decide qué
+-- se publica no puede ir a mitad de la lista.
 
 CREATE OR REPLACE TABLE gold_model_skill AS
 
@@ -43,6 +47,7 @@ quake_baseline AS (
 ),
 quake_skill AS (
     SELECT
+        'pronostico_replicas' AS model_family,
         'pronostico_replicas' AS model_id,
         'GLOBAL' AS scope,
         c.cut_year,
@@ -115,6 +120,7 @@ heat_eval AS (
 ),
 heat_skill AS (
     SELECT
+        'riesgo_calor_corregido' AS model_family,
         'riesgo_calor_corregido' AS model_id,
         'GLOBAL' AS scope,
         cut_year,
@@ -147,6 +153,7 @@ pers_fit AS (
 ),
 pers_skill AS (
     SELECT
+        'persistencia_' || h.horizon AS model_family,
         'persistencia_' || h.horizon AS model_id,
         'GLOBAL' AS scope,
         c.cut_year,
@@ -165,10 +172,122 @@ pers_skill AS (
     GROUP BY 1, 2, 3, 4
 ),
 
+-- ══ MODELO 4: dengue a cuatro semanas vista ════════════════════════════════
+--
+-- La pregunta operativa, no la estadística: **estando en la semana t-4, ¿saber
+-- la temperatura ayuda a anticipar los casos de la semana t?**
+--
+-- Se compara contra dos líneas base, y la diferencia entre ellas es el punto:
+--
+--   · climatología  → predecir "lo normal para esa semana del año". Fácil de
+--     batir, y batirla sola no demuestra nada operativo.
+--   · persistencia  → predecir "lo mismo que hace cuatro semanas". Con una
+--     autocorrelación de 0,90-0,96, esta es durísima y es la que de verdad
+--     decide si el modelo aporta algo.
+--
+-- Un modelo que bate a la climatología pero no a la persistencia es un modelo
+-- que ha aprendido que el dengue tiene estaciones. Eso ya lo sabíamos.
+--
+-- ── La fuga que hay que evitar ──────────────────────────────────────────────
+--
+-- La climatología se calcula SOLO con años de entrenamiento. Si se calculara
+-- con la serie entera, las semanas de prueba habrían contribuido a la media
+-- estacional que luego se les resta: el futuro se colaría en su propia
+-- referencia y el error de prueba saldría artificialmente bajo.
+cuts_dengue AS (SELECT unnest([2012, 2014, 2016, 2018]) AS cut_year),
+
+dengue_base AS (
+    SELECT
+        location_id, provincia, period_start, year, semana_iso,
+        ln(1 + casos)  AS lc,
+        temp_media_c   AS tm,
+        row_number() OVER (PARTITION BY location_id ORDER BY period_start) AS t
+    FROM gold_dengue_peru
+    WHERE clima_completo
+      AND location_id IN (
+          SELECT location_id FROM gold_dengue_peru GROUP BY 1
+          HAVING sum(casos) >= 100
+             AND sum(CASE WHEN casos > 0 THEN 1 ELSE 0 END) >= 50
+      )
+),
+dengue_clim AS (
+    SELECT c.cut_year, b.location_id, b.semana_iso,
+           avg(b.lc) AS lc_norm, avg(b.tm) AS tm_norm
+    FROM cuts_dengue c
+    JOIN dengue_base b ON b.year <= c.cut_year
+    GROUP BY 1, 2, 3
+),
+dengue_anom AS (
+    SELECT c.cut_year, b.location_id, b.provincia, b.year, b.t,
+           b.lc - cl.lc_norm AS a_casos,
+           b.tm - cl.tm_norm AS a_temp
+    FROM cuts_dengue c
+    CROSS JOIN dengue_base b
+    JOIN dengue_clim cl
+      ON cl.cut_year = c.cut_year
+     AND cl.location_id = b.location_id
+     AND cl.semana_iso = b.semana_iso
+),
+-- Alineación al horizonte real: la fila lleva el objetivo de la semana t y los
+-- predictores de la t-4, que es todo lo que se conoce al hacer el pronóstico.
+dengue_pairs AS (
+    SELECT a.cut_year, a.location_id, a.provincia, a.year,
+           a.a_casos AS y, p.a_temp AS x, p.a_casos AS y_persistencia
+    FROM dengue_anom a
+    JOIN dengue_anom p
+      ON p.cut_year = a.cut_year
+     AND p.location_id = a.location_id
+     AND p.t = a.t - 4
+),
+dengue_fit AS (
+    SELECT cut_year, location_id,
+           regr_slope(y, x)     AS beta,
+           regr_intercept(y, x) AS alpha
+    FROM dengue_pairs
+    WHERE year <= cut_year
+    GROUP BY 1, 2
+),
+dengue_skill AS (
+    SELECT
+        'dengue_clima_4sem' AS model_family,
+        'dengue_clima_4sem' AS model_family,
+        'dengue_clima_4sem_vs_persistencia' AS model_id,
+        any_value(p.provincia)              AS scope,
+        p.cut_year,
+        'RMSE anomalia log-casos'           AS metric,
+        count(*)                            AS n_test,
+        sqrt(avg(pow(p.y - (f.alpha + f.beta * p.x), 2))) AS value_model,
+        sqrt(avg(pow(p.y - p.y_persistencia, 2)))         AS value_baseline
+    FROM dengue_pairs p
+    JOIN dengue_fit f USING (cut_year, location_id)
+    WHERE p.year > p.cut_year
+    GROUP BY p.location_id, p.cut_year
+
+    UNION ALL
+
+    SELECT
+        'dengue_clima_4sem' AS model_family,
+        'dengue_clima_4sem' AS model_family,
+        'dengue_clima_4sem_vs_climatologia' AS model_id,
+        any_value(p.provincia)              AS scope,
+        p.cut_year,
+        'RMSE anomalia log-casos'           AS metric,
+        count(*)                            AS n_test,
+        sqrt(avg(pow(p.y - (f.alpha + f.beta * p.x), 2))) AS value_model,
+        -- Predecir la anomalía como cero ES predecir la climatología, porque
+        -- la anomalía ya está definida contra ella.
+        sqrt(avg(pow(p.y, 2)))                            AS value_baseline
+    FROM dengue_pairs p
+    JOIN dengue_fit f USING (cut_year, location_id)
+    WHERE p.year > p.cut_year
+    GROUP BY p.location_id, p.cut_year
+),
+
 all_cuts AS (
     SELECT * FROM quake_skill
     UNION ALL BY NAME SELECT * FROM heat_skill
     UNION ALL BY NAME SELECT * FROM pers_skill
+    UNION ALL BY NAME SELECT * FROM dengue_skill
 ),
 scored AS (
     SELECT
@@ -177,8 +296,10 @@ scored AS (
         -- signo es el mismo para RMSE y para Brier.
         round(100 * (1 - value_model / nullif(value_baseline, 0)), 2) AS improvement_pct
     FROM all_cuts
-)
+),
+por_linea_base AS (
 SELECT
+    model_family,
     model_id,
     scope,
     cut_year,
@@ -197,11 +318,32 @@ SELECT
         AS improvement_max,
     count(*) OVER (PARTITION BY model_id, scope) AS n_cuts,
 
-    -- EL CRITERIO DE PRODUCTO. Dos condiciones, ambas necesarias:
-    --   1. la mediana bate a la línea base con margen (>=5%)
-    --   2. NINGÚN corte es negativo — un modelo que a veces estorba, no sale
+    -- Si este modelo bate a ESTA línea base concreta.
     (median(improvement_pct) OVER (PARTITION BY model_id, scope) >= 5.0
      AND min(improvement_pct) OVER (PARTITION BY model_id, scope) > 0)
-        AS should_display
+        AS bate_esta_linea_base,
+
+    -- EL CRITERIO DE PRODUCTO. Tres condiciones, todas necesarias:
+    --   1. la mediana bate a la línea base con margen (>=5%)
+    --   2. NINGÚN corte es negativo — un modelo que a veces estorba, no sale
+    --   3. y las bate TODAS, no solo la más cómoda
+    --
+    -- La tercera se añadió por el dengue. Contra la climatología, Trujillo
+    -- mejoraba un 22,9% y habría salido publicado; contra la persistencia
+    -- —"lo mismo que hace cuatro semanas"— perdía un 98%. Un modelo peor que
+    -- la regla más tonta posible no se puede enseñar por muy bien que quede
+    -- frente a una línea base elegida con cariño.
+    --
+    -- Cuando una familia tiene una sola línea base, la condición no cambia
+    -- nada: es la misma de siempre.
+    NULL::BOOLEAN AS should_display        -- se calcula abajo
 FROM scored
-ORDER BY improvement_median DESC, model_id, cut_year;
+)
+-- Un agregado no puede envolver a una función ventana, así que la condición de
+-- familia se resuelve en un segundo paso sobre el resultado del primero.
+SELECT
+    * EXCLUDE (should_display),
+    bool_and(bate_esta_linea_base) OVER (PARTITION BY model_family, scope)
+        AS should_display
+FROM por_linea_base
+ORDER BY improvement_median DESC, model_id, scope, cut_year;

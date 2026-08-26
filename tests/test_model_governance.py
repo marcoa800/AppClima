@@ -112,3 +112,77 @@ class TestPronosticoReplicas:
         """).fetchone()
         assert media > mediana * 2, "la cola no es pesada; revisar el supuesto"
         assert maximo > media * 5
+
+
+class TestVariasLineasBase:
+    """El criterio que impide publicar un modelo por su línea base más cómoda.
+
+    Se añadió por el dengue. Contra la climatología, Trujillo mejoraba un 22,9%
+    y `should_display` lo habría dado por bueno. Contra la persistencia —"lo
+    mismo que hace cuatro semanas"— perdía un 98%. Las dos cifras son ciertas;
+    publicar solo la primera habría sido enseñar un modelo peor que la regla
+    más tonta posible.
+    """
+
+    def test_ningun_modelo_se_publica_perdiendo_alguna_linea_base(self, con):
+        incoherentes = con.execute(
+            """
+            SELECT DISTINCT model_family, scope, model_id, improvement_median
+            FROM gold_model_skill
+            WHERE should_display AND NOT bate_esta_linea_base
+            ORDER BY 1, 2
+            """
+        ).fetchall()
+
+        assert not incoherentes, (
+            "modelos publicados que pierden contra alguna de sus líneas base: "
+            f"{incoherentes}"
+        )
+
+    def test_el_criterio_de_familia_es_efectivo(self, con):
+        """Que la regla no sea decorativa: tiene que estar frenando algo.
+
+        Si algún día deja de frenar, o es que el dengue empezó a funcionar
+        —improbable, y entonces habría que celebrarlo mirándolo dos veces— o
+        es que alguien quitó la línea base incómoda.
+        """
+        familias_mixtas = con.execute(
+            """
+            SELECT model_family, count(DISTINCT model_id) AS lineas_base
+            FROM gold_model_skill
+            GROUP BY 1
+            HAVING count(DISTINCT model_id) > 1
+            """
+        ).fetchall()
+
+        assert familias_mixtas, (
+            "ninguna familia se evalúa ya contra varias líneas base: la regla "
+            "existe pero no vigila nada"
+        )
+
+    def test_el_pronostico_de_dengue_no_se_publica(self, con):
+        """Correlación validada no es habilidad predictiva.
+
+        Trujillo correlaciona r=0,65 con la temperatura de hace cuatro semanas
+        y aguanta fuera de muestra, pero pierde contra la persistencia en los
+        cuatro cortes. Las doce provincias pierden.
+
+        Si este test falla, lo primero que hay que comprobar no es si el modelo
+        mejoró, sino si sigue estando la línea base de persistencia.
+        """
+        publicadas, total = con.execute(
+            """
+            SELECT count(CASE WHEN should_display THEN 1 END), count(*)
+            FROM (
+                SELECT DISTINCT scope, should_display
+                FROM gold_model_skill
+                WHERE model_family = 'dengue_clima_4sem'
+            )
+            """
+        ).fetchone()
+
+        assert total >= 6, f"solo {total} provincias evaluadas: ¿se perdió el panel?"
+        assert publicadas == 0, (
+            f"{publicadas} provincias de dengue marcadas como publicables. "
+            "Comprobar que sigue evaluándose contra persistencia."
+        )
