@@ -501,3 +501,73 @@ table.data a:hover {
 section.card[id] {
   scroll-margin-top: 16px;
 }
+
+
+/* Marca de tipo en la cabecera de sección. Borde y no fondo: con veintitrés
+   secciones, veintitrés rectángulos de color competirían con los propios
+   gráficos. */
+.pill.marca {
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: lowercase;
+  vertical-align: middle;
+  margin-left: 10px;
+  opacity: 0.85;
+}
+section.card > h2 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+/* Bloque principal. Único sitio de la página con tipografía de titular: si se
+   repitiera, dejaría de destacar y volveríamos al problema de origen. */
+.lead {
+  border-color: var(--series-1);
+}
+.lead-kicker {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+}
+.lead-figure {
+  font-size: clamp(44px, 9vw, 76px);
+  line-height: 1;
+  font-weight: 700;
+  color: var(--hot);
+  margin: 6px 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+.lead-title {
+  font-size: clamp(19px, 3.2vw, 26px);
+  line-height: 1.25;
+  margin: 0 0 10px;
+  max-width: 22em;
+}
+.lead-body {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 46em;
+  margin: 0 0 8px;
+}
+.lead-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 14px 0 0;
+  font-size: 13.5px;
+}
+.lead-links a {
+  color: var(--series-1);
+  text-decoration: none;
+}
+.lead-links a:hover {
+  text-decoration: underline;
+}

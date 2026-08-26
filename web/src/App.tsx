@@ -50,7 +50,8 @@ import { HeatThresholds } from './components/HeatThresholds'
 import { UnprecedentedDays } from './components/UnprecedentedDays'
 import { HazardProfile } from './components/HazardProfile'
 import { DengueClimate } from './components/DengueClimate'
-import { SectionIndex, type Entrada } from './components/SectionIndex'
+import { Lead } from './components/Lead'
+import { SectionIndex, Marca, type Entrada, type Tipo } from './components/SectionIndex'
 import { EnsoBasins } from './components/EnsoBasins'
 import { PanelCoverage } from './components/PanelCoverage'
 import { HeatwaveModel } from './components/HeatwaveModel'
@@ -152,6 +153,12 @@ const SECCIONES: Entrada[] = [
   { id: 'dengue', titulo: 'Dengue y clima en Perú', tipo: 'nulo' },
   { id: 'fuentes', titulo: 'Fuentes, licencias y atribución', tipo: 'catalogo' },
 ]
+
+// Índice id → tipo, derivado de SECCIONES para que la cabecera y el índice no
+// puedan discrepar.
+const TIPO: Record<string, Tipo> = Object.fromEntries(
+  SECCIONES.map((e) => [e.id, e.tipo]),
+)
 
 export default function App() {
   const [global, setGlobal] = useState<Global | null>(null)
@@ -401,12 +408,14 @@ export default function App() {
         )}
       </div>
 
+      <Lead cities={global.unprecedented} />
+
       <SectionIndex entradas={SECCIONES} />
 
       <section className="card" id="anomalia">
         <h2>
           ¿Es normal el tiempo que hace en {selected?.name ?? locationId}?
-        </h2>
+        <Marca tipo={TIPO['anomalia']} /></h2>
         <p className="note">
           Cada barra es un día comparado con su propia normal para esa fecha del
           año. Rojo hacia arriba: más cálido de lo habitual. Azul hacia abajo:
@@ -425,7 +434,7 @@ export default function App() {
       </section>
 
       <section className="card" id="ano-en-curso">
-        <h2>El año en curso sobre el rango histórico normal</h2>
+        <h2>El año en curso sobre el rango histórico normal<Marca tipo={TIPO['ano-en-curso']} /></h2>
         <p className="note">
           La banda gris es donde cae el 90% de los años (percentiles 5 a 95). Si
           la línea azul se sale de la banda, ese día fue inusual de verdad.
@@ -434,7 +443,7 @@ export default function App() {
       </section>
 
       <section className="card" id="gutenberg">
-        <h2>Ley de Gutenberg-Richter</h2>
+        <h2>Ley de Gutenberg-Richter<Marca tipo={TIPO['gutenberg']} /></h2>
         <p className="note">
           Por cada sismo de magnitud 6 hay unos diez de magnitud 5 y unos cien de
           magnitud 4. En escala logarítmica esa relación es una recta, y es una
@@ -454,7 +463,7 @@ export default function App() {
       </section>
 
       <section className="card" id="omori">
-        <h2>Ley de Omori: cómo se apagan las réplicas</h2>
+        <h2>Ley de Omori: cómo se apagan las réplicas<Marca tipo={TIPO['omori']} /></h2>
         <p className="note">
           Réplicas por día tras cada sismo principal de M≥6.5, sumadas sobre
           todas las secuencias desde 2016. La caída es hiperbólica, no
@@ -475,7 +484,7 @@ export default function App() {
       </section>
 
       <section className="card" id="mito-sismico">
-        <h2>El mito del «clima sísmico», contrastado</h2>
+        <h2>El mito del «clima sísmico», contrastado<Marca tipo={TIPO['mito-sismico']} /></h2>
         <p className="note">
           Cada vez que hay un terremoto notable alguien dice que hacía «tiempo de
           terremotos». Lo medimos: sismos diarios en 500 km alrededor de cada
@@ -499,7 +508,7 @@ export default function App() {
 
 
       <section className="card" id="catastrofes">
-        <h2>Las mayores catástrofes de las que hay registro</h2>
+        <h2>Las mayores catástrofes de las que hay registro<Marca tipo={TIPO['catastrofes']} /></h2>
         <p className="note">
           Epidemias y desastres naturales en la misma escala. El resultado es
           brutal: la peor pandemia mató entre 300 y 800 veces más que el peor
@@ -519,7 +528,7 @@ export default function App() {
       </section>
 
       <section className="card" id="cascadas">
-        <h2>Cuando el desastre no es el que mata</h2>
+        <h2>Cuando el desastre no es el que mata<Marca tipo={TIPO['cascadas']} /></h2>
         <p className="note">
           Los tres archivos de NOAA están enlazados por identificador, así que se
           puede reconstruir la cadena causal: qué sismo generó qué tsunami. Y ahí
@@ -539,7 +548,7 @@ export default function App() {
 
 
       <section className="card" id="denominador">
-        <h2>El denominador: una de cada tres personas</h2>
+        <h2>El denominador: una de cada tres personas<Marca tipo={TIPO['denominador']} /></h2>
         <p className="note">
           Todas las cifras de víctimas son absolutas, y eso engaña siempre en la
           misma dirección: parecen peores los desastres recientes, porque había
@@ -555,7 +564,7 @@ export default function App() {
       </section>
 
       <section className="card" id="epidemias">
-        <h2>Epidemias: siempre un rango, nunca una cifra</h2>
+        <h2>Epidemias: siempre un rango, nunca una cifra<Marca tipo={TIPO['epidemias']} /></h2>
         <p className="note">
           Las estimaciones de muertes de la peste negra van de 75 a 200 millones.
           Publicar «137 millones» sugeriría una precisión que ninguna fuente
@@ -567,7 +576,7 @@ export default function App() {
       </section>
 
       <section className="card" id="siglos">
-        <h2>Cuánto sabemos de cada siglo</h2>
+        <h2>Cuánto sabemos de cada siglo<Marca tipo={TIPO['siglos']} /></h2>
         <p className="note">
           Este gráfico no mide la historia: mide cuánto se conserva de ella. Está
           aquí para desactivar la lectura equivocada de todas las series
@@ -579,7 +588,7 @@ export default function App() {
       </section>
 
       <section className="card" id="acontecimientos">
-        <h2>Lo que cambió aquello que los datos miden</h2>
+        <h2>Lo que cambió aquello que los datos miden<Marca tipo={TIPO['acontecimientos']} /></h2>
         <p className="note">
           No son catástrofes: son las razones por las que las series se comportan
           como se comportan. La Revolución Industrial no aparece en ningún
@@ -591,7 +600,7 @@ export default function App() {
       </section>
 
       <section className="card" id="ciclones">
-        <h2>¿Hay más ciclones tropicales que antes?</h2>
+        <h2>¿Hay más ciclones tropicales que antes?<Marca tipo={TIPO['ciclones']} /></h2>
         <p className="note">
           Energía ciclónica acumulada de todo el planeta, temporada a temporada
           desde 1980. El ACE mide intensidad y duración a la vez, no solo cuántas
@@ -617,7 +626,7 @@ export default function App() {
 
 
       <section className="card" id="enso">
-        <h2>El Niño y los ciclones: la señal que sí sobrevivió</h2>
+        <h2>El Niño y los ciclones: la señal que sí sobrevivió<Marca tipo={TIPO['enso']} /></h2>
         <p className="note">
           De todo lo que se contrastó en este proyecto, esta es de las pocas
           relaciones que aguantó la verificación adversarial. Y aguanta{' '}
@@ -631,7 +640,7 @@ export default function App() {
       </section>
 
       <section className="card" id="aves">
-        <h2>Aves: cuando el dato mide al observador, no a la naturaleza</h2>
+        <h2>Aves: cuando el dato mide al observador, no a la naturaleza<Marca tipo={TIPO['aves']} /></h2>
         <p className="note">
           Riqueza de especies observadas alrededor de cada ciudad, frente al
           número de listas que enviaron los observadores. Datos de eBird, ciencia
@@ -656,7 +665,7 @@ export default function App() {
 
 
       <section className="card" id="habilidad">
-        <h2>Qué predice de verdad, y qué no sale a producción</h2>
+        <h2>Qué predice de verdad, y qué no sale a producción<Marca tipo={TIPO['habilidad']} /></h2>
         <p className="note">
           Cada modelo evaluado con walk-forward sobre varios cortes temporales,
           no sobre uno. Se guarda la <strong>mediana</strong>, nunca el máximo.
@@ -678,7 +687,7 @@ export default function App() {
 
 
       <section className="card" id="correlacion">
-        <h2>Cuándo una correlación significa algo</h2>
+        <h2>Cuándo una correlación significa algo<Marca tipo={TIPO['correlacion']} /></h2>
         <p className="note">
           Esta tabla no enseña un resultado: enseña{' '}
           <strong>cuánto hay que exigirle a un resultado antes de creérselo</strong>.
@@ -692,7 +701,7 @@ export default function App() {
       </section>
 
       <section className="card" id="calor-extremo">
-        <h2>Riesgo de calor extremo: qué añade saber la fase de El Niño</h2>
+        <h2>Riesgo de calor extremo: qué añade saber la fase de El Niño<Marca tipo={TIPO['calor-extremo']} /></h2>
         <p className="note">{global.heatwaveDesign}</p>
         <HeatwaveModel
           cells={global.heatwave}
@@ -703,7 +712,7 @@ export default function App() {
       </section>
 
       <section className="card" id="sin-precedente">
-        <h2>Días para los que esta ciudad no tiene precedente</h2>
+        <h2>Días para los que esta ciudad no tiene precedente<Marca tipo={TIPO['sin-precedente']} /></h2>
         <p className="note">
           Un día sin precedente supera todo lo registrado en su misma época del
           año durante los trece años anteriores. Importa porque las
@@ -724,7 +733,7 @@ export default function App() {
       </section>
 
       <section className="card" id="umbrales">
-        <h2>Los umbrales de alerta por calor están desfasados</h2>
+        <h2>Los umbrales de alerta por calor están desfasados<Marca tipo={TIPO['umbrales']} /></h2>
         <p className="note">
           Un plan de emergencia por calor se dispara al superar un umbral, y ese
           umbral se calibra con datos históricos: el percentil 95 de la máxima
@@ -746,7 +755,7 @@ export default function App() {
       </section>
 
       <section className="card" id="replicas">
-        <h2>Pronóstico de réplicas tras un sismo</h2>
+        <h2>Pronóstico de réplicas tras un sismo<Marca tipo={TIPO['replicas']} /></h2>
         <p className="note">
           Veinticuatro horas después de un sismo de magnitud 6,5 o mayor, las
           réplicas de ese primer día permiten estimar cuántas habrá entre el
@@ -765,7 +774,7 @@ export default function App() {
 
 
       <section className="card" id="peligro">
-        <h2>Perfil de peligro: cuatro frentes, sin sumarlos</h2>
+        <h2>Perfil de peligro: cuatro frentes, sin sumarlos<Marca tipo={TIPO['peligro']} /></h2>
         <p className="note">
           Lo natural sería fundir ciclones, sismos y calor en un «índice de
           riesgo». No se hace, y no por pereza: sumar exige pesos, y no existe
@@ -779,7 +788,7 @@ export default function App() {
       </section>
 
       <section className="card" id="dengue">
-        <h2>Dengue y clima en Perú: lo que se buscó y no está</h2>
+        <h2>Dengue y clima en Perú: lo que se buscó y no está<Marca tipo={TIPO['dengue']} /></h2>
         <p className="note">{global.dengueWhatIsIt}</p>
         <DengueClimate
           provincias={global.dengue}
@@ -796,7 +805,7 @@ export default function App() {
       </section>
 
       <section className="card" id="fuentes">
-        <h2>Fuentes, licencias y atribución</h2>
+        <h2>Fuentes, licencias y atribución<Marca tipo={TIPO['fuentes']} /></h2>
         <p className="note">
           Once fuentes abiertas. Cinco exigen atribución explícita y tres
           restringen el uso comercial — por eso este proyecto es y seguirá

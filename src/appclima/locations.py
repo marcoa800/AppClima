@@ -226,6 +226,46 @@ LOCATIONS: list[Location] = [
     Location(id="puerto-maldonado", name="Puerto Maldonado", country="PE",
              lat=-12.60, lon=-69.19, timezone="America/Lima",
              koppen="Am", seismic_level=1, flyway="americas-atlantico"),
+    # ── Segunda tanda por epidemiología ───────────────────────────────────
+    #
+    # Diez provincias más con carga alta de dengue y sin ciudad cercana. Suben
+    # la cobertura del panel del 59% al ~75% de los casos notificados del país.
+    #
+    # Como en la tanda anterior, el nombre de la ciudad y el de la provincia no
+    # siempre coinciden, y confundirlos rompe el emparejamiento en silencio:
+    # Yurimaguas es capital de Alto Amazonas, La Merced de Chanchamayo,
+    # Chimbote de Santa, Tarapoto de San Martín, Quillabamba de La Convención y
+    # Lambayeque es a la vez departamento y provincia.
+    Location(id="ica", name="Ica", country="PE", lat=-14.07, lon=-75.73,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="yurimaguas", name="Yurimaguas", country="PE", lat=-5.90, lon=-76.10,
+             timezone="America/Lima",
+             koppen="Af", seismic_level=1, flyway="americas-atlantico"),
+    Location(id="la-merced", name="La Merced", country="PE", lat=-11.06, lon=-75.34,
+             timezone="America/Lima",
+             koppen="Am", seismic_level=2, flyway="americas-atlantico"),
+    Location(id="chimbote", name="Chimbote", country="PE", lat=-9.09, lon=-78.58,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="lambayeque", name="Lambayeque", country="PE", lat=-6.70, lon=-79.91,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="quillabamba", name="Quillabamba", country="PE", lat=-12.87, lon=-72.69,
+             timezone="America/Lima",
+             koppen="Am", seismic_level=2, flyway="americas-atlantico"),
+    Location(id="tarapoto", name="Tarapoto", country="PE", lat=-6.49, lon=-76.37,
+             timezone="America/Lima",
+             koppen="Am", seismic_level=2, flyway="americas-atlantico"),
+    Location(id="chincha", name="Chincha Alta", country="PE", lat=-13.42, lon=-76.13,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="paita", name="Paita", country="PE", lat=-5.09, lon=-81.11,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="satipo", name="Satipo", country="PE", lat=-11.25, lon=-74.64,
+             timezone="America/Lima",
+             koppen="Af", seismic_level=2, flyway="americas-atlantico"),
 
     # ── Sudamérica ────────────────────────────────────────────────────────
     Location(id="manaus", name="Manaos", country="BR", lat=-3.12, lon=-60.02,
@@ -363,6 +403,16 @@ FLAGSHIP_IDS: tuple[str, ...] = (
     "chulucanas",     # BSh  — transición costa-sierra
     "jaen",           # Aw   — selva alta, 730 m
     "puerto-maldonado",  # Am — selva sur
+    "ica",            # BWh  — costa sur
+    "yurimaguas",     # Af   — selva baja
+    "la-merced",      # Am   — selva central
+    "chimbote",       # BWh  — costa de Áncash
+    "lambayeque",     # BWh  — costa norte
+    "quillabamba",    # Am   — selva de Cusco
+    "tarapoto",       # Am   — selva alta
+    "chincha",        # BWh  — costa sur
+    "paita",          # BWh  — costa de Piura
+    "satipo",         # Af   — selva central
     "iquitos",        # Af   — Amazonía
     "pucallpa",       # Af   — Amazonía
     "huaraz",         # Cwb  — Cordillera Blanca

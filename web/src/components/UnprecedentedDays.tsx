@@ -40,7 +40,13 @@ export function UnprecedentedDays({
   // no dice nada hasta saber que la media del mundo es ×3,95.
   const mediaMundo =
     cities.reduce((a, c) => a + c.razon_calor, 0) / Math.max(cities.length, 1)
-  const escala = (r: number) => Math.max(1, (r / maxRazon) * MEDIO)
+  // Raíz cuadrada, no lineal. En lineal la escala la fija Chulucanas con
+  // ×13,57 y todo lo demás queda en muñones de dos o tres píxeles: comparar
+  // ×3,3 con ×4,2 —que es una diferencia real y grande— se vuelve imposible.
+  // La raíz comprime la cola alta y expande la baja, que es donde vive la
+  // mayoría de las ciudades.
+  const escala = (r: number) =>
+    Math.max(1.5, (Math.sqrt(r) / Math.sqrt(maxRazon)) * MEDIO)
 
   return (
     <div className="chart-scroll">
@@ -61,7 +67,7 @@ export function UnprecedentedDays({
             <th>
               Frío ← → Calor{' '}
               <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
-                (veces lo esperado)
+                (veces lo esperado, escala √ · ┆ = lo normal)
               </span>
             </th>
             <th className="num">Días/año</th>
@@ -117,6 +123,19 @@ export function UnprecedentedDays({
                         width={escala(c.razon_calor)}
                         height={6}
                         fill="var(--hot)"
+                      />
+                      {/* Dónde caería "lo normal", DESPUÉS de las barras: si se
+                          dibuja antes, los rectángulos la tapan y la referencia
+                          deja de existir aunque el marcado la incluya. */}
+                      <line
+                        x1={MEDIO + escala(1)}
+                        y1={1}
+                        x2={MEDIO + escala(1)}
+                        y2={13}
+                        stroke="var(--text-primary)"
+                        strokeWidth={1}
+                        strokeDasharray="2 2"
+                        opacity={0.55}
                       />
                     </svg>
                     <span className="amp-num">×{c.razon_calor}</span>

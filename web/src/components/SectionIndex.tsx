@@ -30,6 +30,24 @@ const COLOR: Record<Tipo, string> = {
   catalogo: 'var(--text-muted)',
 }
 
+/** Marca del tipo de sección, para llevarlo también a la cabecera.
+ *
+ * En el índice ya se ve, pero quien llega scrolleando —que es casi todo el
+ * mundo— no pasa por el índice. Sin esto, una hipótesis que se cayó y un
+ * hallazgo sólido tienen exactamente el mismo aspecto en pantalla, y el lector
+ * no tiene forma de saber cuál está mirando hasta terminar de leer.
+ */
+export function Marca({ tipo }: { tipo: Tipo }) {
+  return (
+    <span
+      className="pill marca"
+      style={{ color: COLOR[tipo], borderColor: COLOR[tipo] }}
+    >
+      {ETIQUETA[tipo]}
+    </span>
+  )
+}
+
 export function SectionIndex({ entradas }: { entradas: Entrada[] }) {
   const porTipo = (t: Tipo) => entradas.filter((e) => e.tipo === t)
 

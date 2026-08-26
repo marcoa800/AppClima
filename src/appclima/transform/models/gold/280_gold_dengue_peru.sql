@@ -90,7 +90,19 @@ WITH mapa(location_id, departamento, provincia) AS (
     ('talara',           'PIURA',         'TALARA'),
     ('chulucanas',       'PIURA',         'MORROPON'),
     ('jaen',             'CAJAMARCA',     'JAEN'),
-    ('puerto-maldonado', 'MADRE DE DIOS', 'TAMBOPATA')
+    ('puerto-maldonado', 'MADRE DE DIOS', 'TAMBOPATA'),
+    -- Segunda tanda. Ojo con los nombres: la ciudad y la provincia no siempre
+    -- coinciden, y aquí un desliz no da error, da una fila menos en silencio.
+    ('ica',         'ICA',        'ICA'),
+    ('yurimaguas',  'LORETO',     'ALTO AMAZONAS'),
+    ('la-merced',   'JUNIN',      'CHANCHAMAYO'),
+    ('chimbote',    'ANCASH',     'SANTA'),
+    ('lambayeque',  'LAMBAYEQUE', 'LAMBAYEQUE'),
+    ('quillabamba', 'CUSCO',      'LA CONVENCION'),
+    ('tarapoto',    'SAN MARTIN', 'SAN MARTIN'),
+    ('chincha',     'ICA',        'CHINCHA'),
+    ('paita',       'PIURA',      'PAITA'),
+    ('satipo',      'JUNIN',      'SATIPO')
 ),
 
 boletin AS (
