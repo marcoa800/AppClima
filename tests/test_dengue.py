@@ -7,8 +7,6 @@ existen y los números parecen razonables.
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_la_deduplicacion_no_colapsa_el_dataset(warehouse) -> None:
     """El `UUID` de OpenDengue identifica el boletín, no la fila.

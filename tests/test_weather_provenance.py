@@ -16,8 +16,6 @@ tener dos modelos distintos en su archivo observado.
 
 from __future__ import annotations
 
-import pytest
-
 from appclima.sources import open_meteo
 
 

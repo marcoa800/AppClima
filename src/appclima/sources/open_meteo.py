@@ -96,7 +96,9 @@ def _as_list(payload: object) -> list[dict]:
     raise TypeError(f"Respuesta inesperada de Open-Meteo: {type(payload)}")
 
 
-def _parse_block(block: dict, location: Location, kind: str, model: str | None = None) -> list[WeatherHour]:
+def _parse_block(
+    block: dict, location: Location, kind: str, model: str | None = None
+) -> list[WeatherHour]:
     """Convierte el bloque `hourly` (arrays paralelos) en filas."""
     hourly = block.get("hourly")
     if not hourly:
