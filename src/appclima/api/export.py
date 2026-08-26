@@ -54,6 +54,7 @@ def _routes() -> dict[str, Callable[[], Any]]:
         "health": api.health,
         "locations": api.locations,
         "models/skill": api.model_skill,
+        "health/dengue": api.dengue,
         "patterns/warming": api.warming,
         "patterns/gutenberg-richter": api.gutenberg_richter,
         "patterns/omori": lambda: api.omori(min_sequence=20),

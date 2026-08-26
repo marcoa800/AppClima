@@ -894,6 +894,84 @@ def historical_events(
 # bonito no gane.
 
 
+@app.get("/health/dengue", summary="Dengue en Perú y su relación con el clima")
+def dengue() -> dict:
+    """Vigilancia semanal del CDC-MINSA cruzada con el archivo ERA5.
+
+    Es la única serie del proyecto que mide un efecto sobre personas con la
+    misma resolución temporal que el clima. Se publica entera, incluido lo que
+    NO se pudo demostrar con ella.
+    """
+    provincias = _query("""
+        SELECT location_id, departamento, provincia, temp_media_c,
+               casos_total, semanas_con_casos, semanas_vigiladas,
+               pct_semanas_con_casos, transmision, pico_semanal,
+               precip_anual_mm
+        FROM gold_dengue_temperature
+        WHERE casos_total > 0 OR temp_media_c IS NOT NULL
+        ORDER BY casos_total DESC, location_id
+    """)
+
+    retardos = _query("""
+        SELECT provincia, lag_semanas, n, r_temp, pct_varianza_temp,
+               acf1_casos, n_efectivo, r_umbral_ingenuo, r_umbral_honesto,
+               r_umbral_bonferroni, r_temp_entreno, r_temp_prueba,
+               lag_plausible, aguanta_fuera_de_muestra
+        FROM gold_dengue_lags
+        WHERE lag_semanas <= 12
+        ORDER BY provincia, lag_semanas
+    """)
+
+    habilidad = _query("""
+        SELECT DISTINCT model_id, scope AS provincia, improvement_median,
+               improvement_min, improvement_max, n_cuts,
+               bate_esta_linea_base, should_display
+        FROM gold_model_skill
+        WHERE model_family = 'dengue_clima_4sem'
+        ORDER BY model_id, improvement_median DESC, provincia
+    """)
+
+    return {
+        "provincias": provincias,
+        "correlaciones_por_retardo": retardos,
+        "habilidad_predictiva": habilidad,
+        "que_hay_aqui": (
+            "Vigilancia semanal de dengue por provincia (CDC-MINSA vía "
+            "OpenDengue, 2000-2023) emparejada con el archivo ERA5 de la "
+            "ciudad que está DENTRO de esa provincia. Doce provincias con "
+            "transmisión real, 1.252 semanas cada una, sin huecos: la fuente "
+            "no publica las semanas sin casos, así que se rellenan con ceros "
+            "explícitos — usar solo las semanas presentes sería quedarse con "
+            "las semanas en las que hubo enfermos, que es condicionar sobre "
+            "el resultado."
+        ),
+        "que_no_demuestra": (
+            "No hay umbral térmico limpio. Parecía haberlo —seis provincias "
+            "cálidas con 309.765 casos frente a seis frías con seis— y era el "
+            "sesgo de un archivo climático que mezclaba dos reanálisis. Con un "
+            "solo modelo, Tacna (19,1 °C) es más cálida que Lima (19,0) y "
+            "tiene cero casos frente a 32.466."
+        ),
+        "y_predecir": (
+            "Tampoco. Trujillo correlaciona r=0,65 con la temperatura de hace "
+            "cuatro semanas y aguanta fuera de muestra, pero al convertirlo en "
+            "pronóstico pierde un 98% contra la regla más tonta posible: "
+            "repetir lo que había hace cuatro semanas. Le pasa a las doce "
+            "provincias. Con la serie de casos autocorrelada al 0,90-0,96, el "
+            "pasado reciente del propio brote informa mucho más que el "
+            "termómetro."
+        ),
+        "para_que_sirve_entonces": (
+            "Para saber que el termómetro no basta, que es una conclusión "
+            "operativa: un sistema de alerta temprana de dengue basado en "
+            "clima daría peor resultado que mirar el boletín de la semana "
+            "pasada. Y para tener el panel montado el día que se le añadan "
+            "las variables que sí podrían faltar — serotipo circulante, "
+            "cobertura de control vectorial, movilidad."
+        ),
+    }
+
+
 @app.get("/models/skill", summary="Habilidad medida de cada modelo")
 def model_skill() -> dict:
     return {

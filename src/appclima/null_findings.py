@@ -74,34 +74,57 @@ NULL_FINDINGS: list[NullFinding] = [
     NullFinding(
         id="dengue-clima-retardado",
         domain="salud",
-        claim="El calor de hace 4-12 semanas predice los casos de dengue de "
-              "esta semana, en cualquier provincia con transmisión.",
-        verdict="Nulo en cuatro de seis provincias. Sobrevive en dos, y "
-                "justamente NO en la de mayor carga.",
-        statistic="6 provincias × 21 retardos × 2 variables sobre ~935 semanas. "
-                  "Pasan Bonferroni y la validación temporal solo Trujillo "
-                  "(retardo 4 semanas, r = 0,650, 42% de varianza; entreno "
-                  "≤2016 r = 0,507 → prueba ≥2017 r = 0,759) y Chiclayo "
-                  "(retardo 3, r = 0,476; 0,370 → 0,551). Piura, con 98.668 "
-                  "casos, se desmorona fuera de muestra: 0,501 → 0,085. "
-                  "Iquitos y Pucallpa, nada. La lluvia no pasa en ninguna.",
-        why_solid="El diseño compara cada provincia consigo misma, así que "
-                  "pobreza, altitud y sistema sanitario quedan controlados. "
-                  "Series desestacionalizadas contra la media de esa semana "
-                  "del año, casos en log(1+x), n efectivo corregido por una "
-                  "autocorrelación de 0,90-0,96 —que reduce 935 semanas a "
-                  "37-101 datos independientes— y partición temporal, nunca "
-                  "aleatoria: repartir semanas al azar mediría persistencia.",
-        lesson="El nulo no es del mecanismo sino de su generalidad. Donde la "
-               "temperatura funciona es donde es limitante: Trujillo y "
-               "Chiclayo rondan los 21 °C, cerca del margen de transmisión. "
-               "Piura está a 24 °C con casos el 62% de las semanas —"
-               "hiperendémica y saturada— y ahí el termómetro ya no explica "
-               "nada. Un modelo climático de dengue no se puede desplegar "
-               "igual en todas partes: sirve en el borde, no en el núcleo. "
-               "Ojo además con que el retardo se eligió mirando los datos; "
-               "lo que lo salva es que aguante con el retardo ya fijado.",
-        strength="provisional",
+        claim="El calor de hace 4-12 semanas permite anticipar los brotes de "
+              "dengue con antelación útil.",
+        verdict="La correlación existe y aguanta fuera de muestra. La "
+                "capacidad de predecir, no.",
+        statistic="12 provincias, 4 cortes de walk-forward, pronóstico a 4 "
+                  "semanas. Contra la climatología, tres provincias mejoran "
+                  "—Trujillo +22,9%, Tumbes +11,2%, Chiclayo +7,1%—. Contra la "
+                  "persistencia, la regla de 'lo mismo que hace cuatro "
+                  "semanas', las DOCE pierden: de -43% (Maynas) a -197% "
+                  "(Piura). Ninguna se publica.",
+        why_solid="La climatología se calcula solo con años de entrenamiento, "
+                  "así que las semanas de prueba no contribuyen a la media que "
+                  "se les resta. El horizonte es honesto: en la semana t-4 "
+                  "solo se usan casos y temperatura de t-4. Y los cuatro "
+                  "cortes van en la misma dirección, no es un corte "
+                  "afortunado.",
+        lesson="Una correlación validada fuera de muestra todavía no es "
+               "habilidad predictiva, y aquí se ve por qué: con una "
+               "autocorrelación de 0,90-0,96, la propia serie de casos "
+               "contiene mucha más información que el termómetro. El "
+               "predictor no compite contra el azar, compite contra el "
+               "pasado reciente del propio fenómeno — y pierde. "
+               "Elegir bien la línea base decide el resultado más que "
+               "elegir bien el modelo.",
+        strength="sólido",
+    ),
+    NullFinding(
+        id="dengue-borde-vs-nucleo",
+        domain="salud",
+        claim="La temperatura manda donde es limitante: en las provincias "
+              "templadas, cerca del margen de transmisión, y no en las "
+              "cálidas y saturadas.",
+        verdict="Predicción registrada antes de mirar los datos. Falló.",
+        statistic="Se añadieron seis provincias para contrastarla, prediciendo "
+                  "que Tumbes y Sullana —cálidas y saturadas como Piura— "
+                  "fallarían, y que Jaén y Tambopata se parecerían a Trujillo. "
+                  "Salió al revés: Tumbes (24,9 °C, casos el 73% de las "
+                  "semanas) mejora un 11,2% sobre la climatología, mientras "
+                  "Jaén (-2,3%) y Tambopata (+1,5%) no llegan. Las tres que "
+                  "pasan son Trujillo, Tumbes y Chiclayo, que no son las tres "
+                  "más frías.",
+        why_solid="La hipótesis se escribió en el catálogo de ubicaciones y en "
+                  "el commit ANTES del backfill, y las seis provincias se "
+                  "eligieron por carga de casos, no por temperatura. No hubo "
+                  "margen para reinterpretarla después.",
+        lesson="El patrón que quedaba —las tres que pasan son costeras y no "
+               "pertenecen a la región de Piura— es justo el tipo de "
+               "explicación que se inventa después de ver el resultado. Se "
+               "deja anotado como observación, no como hipótesis: para eso "
+               "haría falta registrarla antes y traer provincias nuevas.",
+        strength="sólido",
     ),
     NullFinding(
         id="clima-sismico",
