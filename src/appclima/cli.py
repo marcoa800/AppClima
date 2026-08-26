@@ -27,6 +27,7 @@ from appclima.sources import (
     ibtracs,
     noaa_hazards,
     open_meteo,
+    opendengue,
     usgs,
     worldbank,
 )
@@ -367,6 +368,40 @@ def ingest_population(verbose: bool = False) -> None:
     )
 
 
+@ingest_app.command("dengue")
+def ingest_dengue(
+    extract: Annotated[
+        str,
+        typer.Option("--extract", help="subnational | national | both"),
+    ] = "both",
+    verbose: bool = False,
+) -> None:
+    """Vigilancia de dengue desde OpenDengue (LSHTM), semanal y por provincia.
+
+    Es la única fuente del proyecto que mide un **efecto sobre personas** con la
+    misma resolución temporal que el clima. Todo lo demás mide el fenómeno
+    físico; esto mide lo que le hace a la gente.
+
+    Para Perú son los boletines del CDC-MINSA: 116 provincias, 2000-2023.
+    """
+    _setup_logging(verbose)
+    settings.ensure_dirs()
+
+    extractos = ["subnational", "national"] if extract == "both" else [extract]
+    total = 0
+
+    for nombre in extractos:
+        rows = opendengue.fetch(nombre)
+        write_bronze(rows, source="opendengue", dataset=nombre)
+        total += len(rows)
+        paises = len({r.iso3 or r.country_name for r in rows})
+        console.print(
+            f"[green]✓[/green] {nombre}: {len(rows):,} registros de {paises} países"
+        )
+
+    console.print(f"[green]✓[/green] {total:,} filas de vigilancia en bronze")
+
+
 @ingest_app.command("enso")
 def ingest_enso(verbose: bool = False) -> None:
     """Índice ONI de El Niño / La Niña desde 1950. Sin API key."""
@@ -514,6 +549,13 @@ def ingest_all(
         write_bronze(WORLD_POPULATION, source="curated", dataset="world_population")
         return f"{len(rows):,} país-año"
 
+    def _dengue() -> str:
+        rows = opendengue.fetch("subnational")
+        write_bronze(rows, source="opendengue", dataset="subnational")
+        nacional = opendengue.fetch("national")
+        write_bronze(nacional, source="opendengue", dataset="national")
+        return f"{len(rows) + len(nacional):,} registros"
+
     def _desastres() -> str:
         total = 0
         for name in noaa_hazards.ENDPOINTS:
@@ -549,6 +591,7 @@ def ingest_all(
         ("ciclones", "weekly", _ciclones),
         ("enso", "monthly", _enso),
         ("población", "yearly", _poblacion),
+        ("dengue", "yearly", _dengue),
         ("desastres", "yearly", _desastres),
         ("catálogos curados", "yearly", _curados),
         ("fenología", "yearly", _fenologia),

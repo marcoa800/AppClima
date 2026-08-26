@@ -44,6 +44,66 @@ class NullFinding(BaseModel):
 
 NULL_FINDINGS: list[NullFinding] = [
     NullFinding(
+        id="dengue-umbral-termico",
+        domain="salud",
+        claim="Existe una temperatura por debajo de la cual el dengue no se "
+              "transmite, y basta con vigilar el termómetro para saber qué "
+              "ciudades entran en riesgo.",
+        verdict="El umbral nítido desapareció al arreglar el termómetro. La "
+                "temperatura media no decide el borde.",
+        statistic="Con el archivo original, las 6 provincias más cálidas de 12 "
+                  "sumaban 309.765 casos y las 6 más frías seis, con el corte "
+                  "entre Lima (18,9 °C) y Tacna (18,0 °C); test exacto "
+                  "1/C(12,6) = 0,0011. Con un único reanálisis (ERA5), Lima y "
+                  "Tacna están ambas a 18,88 °C: 32.466 casos frente a 0.",
+        why_solid="El fallo no fue de muestra sino de instrumento. Open-Meteo, "
+                  "sin fijar el modelo, sirve ERA5 hasta 2016 y el IFS de "
+                  "ECMWF desde 2017; en Tacna esa costura vale 2,44 °C y la "
+                  "hacía parecer 2,4 °C más fría de lo que es. Con la "
+                  "procedencia homogénea, las dos ciudades coinciden en "
+                  "temperatura y difieren en todo lo demás.",
+        lesson="Un resultado limpio con un mecanismo elegante detrás es "
+               "justo el que menos se audita. El período de incubación "
+               "extrínseco predice un corte cerca de 18 °C, la coincidencia "
+               "con el dato parecía validación externa, y era el sesgo del "
+               "reanálisis. La temperatura resulta necesaria pero no "
+               "suficiente: por debajo de 15 °C no hay transmisión en ninguna "
+               "provincia, pero por encima no basta con el termómetro.",
+        strength="sólido",
+    ),
+    NullFinding(
+        id="dengue-clima-retardado",
+        domain="salud",
+        claim="El calor de hace 4-12 semanas predice los casos de dengue de "
+              "esta semana, en cualquier provincia con transmisión.",
+        verdict="Nulo en cuatro de seis provincias. Sobrevive en dos, y "
+                "justamente NO en la de mayor carga.",
+        statistic="6 provincias × 21 retardos × 2 variables sobre ~935 semanas. "
+                  "Pasan Bonferroni y la validación temporal solo Trujillo "
+                  "(retardo 4 semanas, r = 0,650, 42% de varianza; entreno "
+                  "≤2016 r = 0,507 → prueba ≥2017 r = 0,759) y Chiclayo "
+                  "(retardo 3, r = 0,476; 0,370 → 0,551). Piura, con 98.668 "
+                  "casos, se desmorona fuera de muestra: 0,501 → 0,085. "
+                  "Iquitos y Pucallpa, nada. La lluvia no pasa en ninguna.",
+        why_solid="El diseño compara cada provincia consigo misma, así que "
+                  "pobreza, altitud y sistema sanitario quedan controlados. "
+                  "Series desestacionalizadas contra la media de esa semana "
+                  "del año, casos en log(1+x), n efectivo corregido por una "
+                  "autocorrelación de 0,90-0,96 —que reduce 935 semanas a "
+                  "37-101 datos independientes— y partición temporal, nunca "
+                  "aleatoria: repartir semanas al azar mediría persistencia.",
+        lesson="El nulo no es del mecanismo sino de su generalidad. Donde la "
+               "temperatura funciona es donde es limitante: Trujillo y "
+               "Chiclayo rondan los 21 °C, cerca del margen de transmisión. "
+               "Piura está a 24 °C con casos el 62% de las semanas —"
+               "hiperendémica y saturada— y ahí el termómetro ya no explica "
+               "nada. Un modelo climático de dengue no se puede desplegar "
+               "igual en todas partes: sirve en el borde, no en el núcleo. "
+               "Ojo además con que el retardo se eligió mirando los datos; "
+               "lo que lo salva es que aguante con el retardo ya fijado.",
+        strength="provisional",
+    ),
+    NullFinding(
         id="clima-sismico",
         domain="sismos",
         claim="«Hacía tiempo de terremotos»: la presión atmosférica o el calor "

@@ -28,6 +28,7 @@ from appclima.locations import LOCATIONS
 from appclima.schemas import BirdObservation, Earthquake, WeatherHour
 from appclima.schemas.cyclones import CycloneTrackPoint
 from appclima.schemas.disasters import HistoricalDisaster, HistoricalEpidemic
+from appclima.schemas.health import DengueWeek
 from appclima.schemas.phenology import PhenologyYear
 from appclima.schemas.population import (
     OniValue,
@@ -138,6 +139,12 @@ def _render(sql: str) -> str:
             "curated", "historical_events", HistoricalEvent
         ),
         "{{bronze_phenology}}": _source_sql("gbif", "phenology", PhenologyYear),
+        "{{bronze_dengue}}": _source_sql(
+            "opendengue", "subnational", DengueWeek
+        ),
+        "{{bronze_dengue_national}}": _source_sql(
+            "opendengue", "national", DengueWeek
+        ),
     }
     for marker, expression in replacements.items():
         sql = sql.replace(marker, expression)
