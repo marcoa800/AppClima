@@ -145,6 +145,53 @@ LOCATIONS: list[Location] = [
              timezone="America/La_Paz",
              koppen="Cwc", seismic_level=2, flyway="americas-pacifico"),
 
+
+    # ── Perú ──────────────────────────────────────────────────────────────
+    # Se amplía a once ciudades por tres razones que no son de cercanía:
+    #
+    # 1. **El Niño tiene aquí su señal terrestre más fuerte del planeta.** El
+    #    fenómeno se llama así porque lo nombraron pescadores peruanos al ver
+    #    que el mar se calentaba por Navidad. La costa norte —Piura, Chiclayo,
+    #    Tumbes— pasa de desierto a inundaciones en un evento fuerte.
+    # 2. **Gradiente de altitud de 0 a 3.800 m** en menos de 300 km. Puno está
+    #    a más altura que muchas cumbres europeas.
+    # 3. **Tres zonas climáticas** en un país: desierto costero (BWh), Andes
+    #    (Cwb/ETH) y Amazonía (Af). Es un laboratorio natural para contrastar
+    #    si un patrón depende del clima o de la latitud.
+    Location(id="piura", name="Piura", country="PE", lat=-5.19, lon=-80.63,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="chiclayo", name="Chiclayo", country="PE", lat=-6.77, lon=-79.84,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="trujillo", name="Trujillo", country="PE", lat=-8.11, lon=-79.03,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="iquitos", name="Iquitos", country="PE", lat=-3.75, lon=-73.25,
+             timezone="America/Lima",
+             koppen="Af", seismic_level=1, flyway="americas-atlantico"),
+    Location(id="pucallpa", name="Pucallpa", country="PE", lat=-8.38, lon=-74.55,
+             timezone="America/Lima",
+             koppen="Af", seismic_level=1, flyway="americas-atlantico"),
+    Location(id="huaraz", name="Huaraz", country="PE", lat=-9.53, lon=-77.53,
+             timezone="America/Lima",
+             koppen="Cwb", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="huancayo", name="Huancayo", country="PE", lat=-12.07, lon=-75.21,
+             timezone="America/Lima",
+             koppen="Cwb", seismic_level=2, flyway="americas-pacifico"),
+    Location(id="cusco", name="Cusco", country="PE", lat=-13.53, lon=-71.97,
+             timezone="America/Lima",
+             koppen="Cwb", seismic_level=2, flyway="americas-pacifico"),
+    Location(id="puno", name="Puno", country="PE", lat=-15.84, lon=-70.03,
+             timezone="America/Lima",
+             koppen="ETH", seismic_level=2, flyway="americas-pacifico"),
+    Location(id="arequipa", name="Arequipa", country="PE", lat=-16.41, lon=-71.54,
+             timezone="America/Lima",
+             koppen="BWk", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="tacna", name="Tacna", country="PE", lat=-18.01, lon=-70.25,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+
     # ── Sudamérica ────────────────────────────────────────────────────────
     Location(id="manaus", name="Manaos", country="BR", lat=-3.12, lon=-60.02,
              timezone="America/Manaus",
@@ -254,6 +301,22 @@ FLAGSHIP_IDS: tuple[str, ...] = (
     "tokyo",          # Cfa  — subtropical húmedo
     "santiago",       # Csb  — mediterráneo austral
     "ushuaia",        # Cfc  — subantártico
+
+    # Perú entero, porque es donde El Niño tiene su señal terrestre más fuerte
+    # y porque su gradiente de altitud y sus tres zonas climáticas permiten
+    # contrastar si un patrón depende del clima o de la latitud.
+    "piura",          # BWh  — costa norte, epicentro de El Niño
+    "chiclayo",       # BWh  — costa norte
+    "trujillo",       # BWh  — costa norte
+    "lima",           # BWh  — desierto costero templado por la corriente fría
+    "tacna",          # BWh  — costa sur
+    "iquitos",        # Af   — Amazonía
+    "pucallpa",       # Af   — Amazonía
+    "huaraz",         # Cwb  — Cordillera Blanca
+    "huancayo",       # Cwb  — Andes centrales
+    "cusco",          # Cwb  — Andes del sur
+    "puno",           # ETH  — altiplano, 3.800 m
+    "arequipa",       # BWk  — desierto de altura
 )
 
 FLAGSHIPS: list[Location] = [BY_ID[i] for i in FLAGSHIP_IDS]

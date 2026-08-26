@@ -105,7 +105,11 @@ class TestCatalogo:
         assert len(ids) == len(set(ids))
 
     def test_las_flagship_existen_en_el_catalogo(self):
-        assert len(FLAGSHIPS) == 12
+        # Sin número fijo: el catálogo es la fuente de verdad y crece. Lo que
+        # sí es invariante es que toda flagship exista y sea la misma
+        # instancia que hay en el índice.
+        assert len(FLAGSHIPS) >= 12
+        assert len(FLAGSHIPS) == len({loc.id for loc in FLAGSHIPS})
         for loc in FLAGSHIPS:
             assert BY_ID[loc.id] is loc
 

@@ -46,8 +46,19 @@ class TestExportacion:
             json.loads(f.read_text())  # revienta si alguno está corrupto
 
     def test_hay_una_ruta_por_ciudad(self, exported: Path):
-        anomalias = list((exported / "weather").glob("*/anomaly.json"))
-        assert len(anomalias) == 49
+        """Una ruta por ciudad del catálogo, ni una más ni una menos.
+
+        Se compara contra LOCATIONS en vez de contra un número escrito a mano:
+        al añadir las once ciudades peruanas este test falló por decir 49
+        cuando ya eran 60, que es ruido, no una señal.
+        """
+        from appclima.locations import LOCATIONS
+
+        anomalias = {p.parent.name for p in (exported / "weather").glob("*/anomaly.json")}
+        esperadas = {loc.id for loc in LOCATIONS}
+        assert anomalias == esperadas, (
+            f"faltan {esperadas - anomalias}, sobran {anomalias - esperadas}"
+        )
 
     def test_la_climatologia_solo_existe_en_las_flagship(self, exported: Path):
         """404 esperado en las otras 37: no es un fallo, es el diseño."""
