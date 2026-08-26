@@ -1172,7 +1172,8 @@ def heat_thresholds() -> dict:
                threshold_2006_2018, threshold_2019_2025, threshold_drift_c,
                n_recent_days, n_exceeded, pct_exceeded_now, pct_expected,
                amplification, days_per_year_expected, days_per_year_now,
-               temp_variability_sd, temp_max_record, recalibration_priority
+               temp_variability_sd, temp_max_record, recalibration_priority,
+               procedencia_fiable, procedencia_modelos
         FROM gold_heat_threshold_drift
         ORDER BY amplification DESC, location_id
     """)
@@ -1190,9 +1191,9 @@ def heat_thresholds() -> dict:
             "Un plan de emergencia por calor se dispara al superar un umbral, "
             "y ese umbral se calibra con datos históricos: el percentil 95 de "
             "la máxima diaria, que por construcción debería superarse un 5% de "
-            "los días. Ya no es así. Con el umbral calculado en 2006-2018, hoy "
-            "Singapur lo supera el 39% de los días y su plan saltaría 144 días "
-            "al año en vez de 18."
+            "los días. Ya no es así. Con el umbral calculado en 2006-2018, "
+            "Trujillo lo supera el 13,8% de los días y su plan saltaría 50 "
+            "veces al año en vez de 18. Le pasa a 21 de las 24 ciudades."
         ),
         "quien_sufre_mas": (
             "Los climas ESTABLES, que es lo contrario de lo intuitivo. La "
@@ -1205,10 +1206,16 @@ def heat_thresholds() -> dict:
             "históricamente aburrido."
         ),
         "limitaciones": (
-            "12 ciudades, no una muestra global. La ventana de evaluación son "
+            "24 ciudades, no una muestra global. La ventana de evaluación son "
             "7 años: basta para ver el desfase, es corta para estimar la "
             "tendencia. Y un umbral real de salud pública combina temperatura, "
             "humedad, duración de la ola y mortalidad observada — aquí solo hay "
-            "temperatura máxima. Esto señala dónde recalibrar, no con qué cifra."
+            "temperatura máxima. Esto señala dónde recalibrar, no con qué cifra. "
+            "Una versión anterior de esta página daba cifras bastante mayores "
+            "—Singapur ×7,9 en vez de ×1,8— porque el archivo climático servía "
+            "ERA5 hasta 2016 y el IFS de ECMWF desde 2017, y ese cambio de "
+            "modelo caía dentro de la ventana comparada. Ahora todas las "
+            "ciudades usan un único reanálisis, y cada fila lleva "
+            "`procedencia_fiable` para que se pueda comprobar."
         ),
     }
