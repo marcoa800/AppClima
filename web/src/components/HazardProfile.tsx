@@ -71,12 +71,21 @@ function Carril({
   )
 }
 
-export function HazardProfile({ cities }: { cities: HazardCity[] }) {
-  // Solo las que destacan en algo: 66 filas de las cuales la mitad son ceros
-  // no informan, cansan.
-  const destacadas = cities
-    .filter((c) => c.dimensiones_en_cuartil_alto > 0)
-    .slice(0, 24)
+export function HazardProfile({
+  cities,
+  soloPeru,
+}: {
+  cities: HazardCity[]
+  soloPeru: boolean
+}) {
+  // Los percentiles vienen calculados sobre las 66 ciudades y NO se recalculan
+  // al filtrar. Un percentil 86 sigue significando "de las más expuestas del
+  // catálogo": recalcularlo dentro de Perú diría algo completamente distinto
+  // con el mismo aspecto.
+  const base = soloPeru ? cities.filter((c) => c.country === 'PE') : cities
+  const destacadas = base
+    .filter((c) => c.dimensiones_en_cuartil_alto > 0 || soloPeru)
+    .slice(0, soloPeru ? 20 : 24)
 
   return (
     <div className="chart-scroll">

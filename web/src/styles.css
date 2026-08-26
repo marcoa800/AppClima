@@ -469,3 +469,35 @@ table.data a:hover {
   color: var(--text-secondary);
   font-size: 12.5px;
 }
+
+/* Índice de secciones. Dos columnas en pantallas anchas para que veintitrés
+   entradas quepan sin convertirse en otro scroll largo — que es justo el
+   problema que el índice viene a resolver. */
+.indice {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2px 24px;
+}
+.indice li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--gridline);
+}
+.indice a {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 13.5px;
+}
+.indice a:hover {
+  text-decoration: underline;
+}
+/* El ancla debe quedar por debajo de cualquier cabecera fija y con aire. */
+section.card[id] {
+  scroll-margin-top: 16px;
+}

@@ -50,6 +50,7 @@ import { HeatThresholds } from './components/HeatThresholds'
 import { UnprecedentedDays } from './components/UnprecedentedDays'
 import { HazardProfile } from './components/HazardProfile'
 import { DengueClimate } from './components/DengueClimate'
+import { SectionIndex, type Entrada } from './components/SectionIndex'
 import { EnsoBasins } from './components/EnsoBasins'
 import { PanelCoverage } from './components/PanelCoverage'
 import { HeatwaveModel } from './components/HeatwaveModel'
@@ -124,11 +125,44 @@ type Global = {
   freshness: Record<string, string | null>
 }
 
+// Clasificación de cada sección. Vive aquí y no dentro del índice porque de
+// ella salen también los `id` de ancla: una sola fuente para las dos cosas.
+const SECCIONES: Entrada[] = [
+  { id: 'anomalia', titulo: '¿Es normal el tiempo que hace?', tipo: 'metodo' },
+  { id: 'ano-en-curso', titulo: 'El año en curso sobre lo normal', tipo: 'metodo' },
+  { id: 'gutenberg', titulo: 'Ley de Gutenberg-Richter', tipo: 'hallazgo' },
+  { id: 'omori', titulo: 'Ley de Omori: cómo se apagan las réplicas', tipo: 'hallazgo' },
+  { id: 'mito-sismico', titulo: 'El mito del «clima sísmico»', tipo: 'nulo' },
+  { id: 'catastrofes', titulo: 'Las mayores catástrofes registradas', tipo: 'catalogo' },
+  { id: 'cascadas', titulo: 'Cuando el desastre no es el que mata', tipo: 'hallazgo' },
+  { id: 'denominador', titulo: 'El denominador: una de cada tres personas', tipo: 'hallazgo' },
+  { id: 'epidemias', titulo: 'Epidemias: siempre un rango', tipo: 'catalogo' },
+  { id: 'siglos', titulo: 'Cuánto sabemos de cada siglo', tipo: 'metodo' },
+  { id: 'acontecimientos', titulo: 'Lo que cambió lo que los datos miden', tipo: 'catalogo' },
+  { id: 'ciclones', titulo: '¿Hay más ciclones que antes?', tipo: 'nulo' },
+  { id: 'enso', titulo: 'El Niño y los ciclones', tipo: 'hallazgo' },
+  { id: 'aves', titulo: 'Aves: el dato mide al observador', tipo: 'nulo' },
+  { id: 'habilidad', titulo: 'Qué predice de verdad y qué no', tipo: 'metodo' },
+  { id: 'correlacion', titulo: 'Cuándo una correlación significa algo', tipo: 'metodo' },
+  { id: 'calor-extremo', titulo: 'Riesgo de calor extremo', tipo: 'nulo' },
+  { id: 'sin-precedente', titulo: 'Días sin precedente', tipo: 'hallazgo' },
+  { id: 'umbrales', titulo: 'Umbrales de alerta por calor desfasados', tipo: 'hallazgo' },
+  { id: 'replicas', titulo: 'Pronóstico de réplicas', tipo: 'hallazgo' },
+  { id: 'peligro', titulo: 'Perfil de peligro por ciudad', tipo: 'catalogo' },
+  { id: 'dengue', titulo: 'Dengue y clima en Perú', tipo: 'nulo' },
+  { id: 'fuentes', titulo: 'Fuentes, licencias y atribución', tipo: 'catalogo' },
+]
+
 export default function App() {
   const [global, setGlobal] = useState<Global | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const [locationId, setLocationId] = useState('madrid')
+  // Perú por defecto. No es chovinismo: es la única parte del catálogo donde
+  // hay las tres capas a la vez —clima largo, sismos y una serie de salud— y
+  // por tanto donde las tablas dicen algo en vez de enumerar. El mundo queda
+  // como marco de comparación, que es lo que le da sentido a un ×12,7.
+  const [soloPeru, setSoloPeru] = useState(true)
+  const [locationId, setLocationId] = useState('trujillo')
   const [anomaly, setAnomaly] = useState<Anomaly[]>([])
   const [climatology, setClimatology] = useState<ClimatologyDay[]>([])
 
@@ -272,8 +306,12 @@ export default function App() {
       <header className="masthead">
         <h1>AppClima</h1>
         <p>
-          Datos abiertos de clima y sismos, ingeridos, modelados y contrastados.
-          49 ciudades ancla, 20 años de reanálisis ERA5 en 12 de ellas y el
+          Datos abiertos de clima y sismos, ingeridos, modelados y contrastados.{' '}
+          {/* Contado, no escrito. Este párrafo decía "49 ciudades ancla, 20
+              años de ERA5 en 12 de ellas" cuando ya eran 66 y 47: un dato en
+              prosa no lo comprueba ningún test ni lo recalcula ningún build. */}
+          {global.locations.length} ciudades ancla, 20 años de reanálisis ERA5 en{' '}
+          {global.locations.filter((l) => l.has_climatology).length} de ellas y el
           catálogo sísmico completo de USGS desde 2016.
         </p>
       </header>
@@ -310,6 +348,15 @@ export default function App() {
       </div>
 
       <div className="filters">
+        <label htmlFor="ambito">Ámbito</label>
+        <select
+          id="ambito"
+          value={soloPeru ? 'pe' : 'mundo'}
+          onChange={(e) => setSoloPeru(e.target.value === 'pe')}
+        >
+          <option value="pe">Perú</option>
+          <option value="mundo">Todo el mundo</option>
+        </select>
         <label htmlFor="loc">Ubicación</label>
         <select
           id="loc"
@@ -354,7 +401,9 @@ export default function App() {
         )}
       </div>
 
-      <section className="card">
+      <SectionIndex entradas={SECCIONES} />
+
+      <section className="card" id="anomalia">
         <h2>
           ¿Es normal el tiempo que hace en {selected?.name ?? locationId}?
         </h2>
@@ -375,7 +424,7 @@ export default function App() {
         )}
       </section>
 
-      <section className="card">
+      <section className="card" id="ano-en-curso">
         <h2>El año en curso sobre el rango histórico normal</h2>
         <p className="note">
           La banda gris es donde cae el 90% de los años (percentiles 5 a 95). Si
@@ -384,7 +433,7 @@ export default function App() {
         <ClimatologyChart climatology={climatology} recent={anomaly} />
       </section>
 
-      <section className="card">
+      <section className="card" id="gutenberg">
         <h2>Ley de Gutenberg-Richter</h2>
         <p className="note">
           Por cada sismo de magnitud 6 hay unos diez de magnitud 5 y unos cien de
@@ -404,7 +453,7 @@ export default function App() {
         </p>
       </section>
 
-      <section className="card">
+      <section className="card" id="omori">
         <h2>Ley de Omori: cómo se apagan las réplicas</h2>
         <p className="note">
           Réplicas por día tras cada sismo principal de M≥6.5, sumadas sobre
@@ -425,7 +474,7 @@ export default function App() {
         )}
       </section>
 
-      <section className="card">
+      <section className="card" id="mito-sismico">
         <h2>El mito del «clima sísmico», contrastado</h2>
         <p className="note">
           Cada vez que hay un terremoto notable alguien dice que hacía «tiempo de
@@ -434,9 +483,14 @@ export default function App() {
         </p>
         <MythTable rows={global.myth} />
         <p className="caveat">
-          Mira las dos últimas columnas juntas. Con más de doscientos mil días, el umbral de
+          Mira las dos últimas columnas juntas. Con{' '}
+          {pooledMyth ? pooledMyth.n_days.toLocaleString('es') : 'cientos de miles de'}{' '}
+          días, el umbral de
           significación estadística cae a r = 0,0066, así que una correlación de
-          0,03 sale «significativa» explicando menos del 0,1% de la varianza. La
+          {pooledMyth ? ` ${pooledMyth.r_pressure}` : ' 0,01'} sale «significativa»
+          explicando el{' '}
+          {pooledMyth ? `${pooledMyth.pct_variance_explained}%` : 'ínfimo'} de la
+          varianza. La
           significación responde a «¿es distinto de cero?», no a «¿importa?». Con
           datos suficientes, todo es distinto de cero. Aquí no hay relación
           práctica — y un resultado nulo bien medido también es un resultado.
@@ -444,7 +498,7 @@ export default function App() {
       </section>
 
 
-      <section className="card">
+      <section className="card" id="catastrofes">
         <h2>Las mayores catástrofes de las que hay registro</h2>
         <p className="note">
           Epidemias y desastres naturales en la misma escala. El resultado es
@@ -464,7 +518,7 @@ export default function App() {
         </p>
       </section>
 
-      <section className="card">
+      <section className="card" id="cascadas">
         <h2>Cuando el desastre no es el que mata</h2>
         <p className="note">
           Los tres archivos de NOAA están enlazados por identificador, así que se
@@ -484,7 +538,7 @@ export default function App() {
 
 
 
-      <section className="card">
+      <section className="card" id="denominador">
         <h2>El denominador: una de cada tres personas</h2>
         <p className="note">
           Todas las cifras de víctimas son absolutas, y eso engaña siempre en la
@@ -500,7 +554,7 @@ export default function App() {
         <p className="caveat">{global.worldPopNote}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="epidemias">
         <h2>Epidemias: siempre un rango, nunca una cifra</h2>
         <p className="note">
           Las estimaciones de muertes de la peste negra van de 75 a 200 millones.
@@ -512,7 +566,7 @@ export default function App() {
         <p className="caveat">{global.epidemicsHow}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="siglos">
         <h2>Cuánto sabemos de cada siglo</h2>
         <p className="note">
           Este gráfico no mide la historia: mide cuánto se conserva de ella. Está
@@ -524,7 +578,7 @@ export default function App() {
         <p className="caveat">{global.centuriesWarning}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="acontecimientos">
         <h2>Lo que cambió aquello que los datos miden</h2>
         <p className="note">
           No son catástrofes: son las razones por las que las series se comportan
@@ -536,7 +590,7 @@ export default function App() {
         <p className="caveat">{global.histEventsNote}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="ciclones">
         <h2>¿Hay más ciclones tropicales que antes?</h2>
         <p className="note">
           Energía ciclónica acumulada de todo el planeta, temporada a temporada
@@ -562,7 +616,7 @@ export default function App() {
       </section>
 
 
-      <section className="card">
+      <section className="card" id="enso">
         <h2>El Niño y los ciclones: la señal que sí sobrevivió</h2>
         <p className="note">
           De todo lo que se contrastó en este proyecto, esta es de las pocas
@@ -576,7 +630,7 @@ export default function App() {
         <p className="caveat">{global.ensoFinding}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="aves">
         <h2>Aves: cuando el dato mide al observador, no a la naturaleza</h2>
         <p className="note">
           Riqueza de especies observadas alrededor de cada ciudad, frente al
@@ -601,7 +655,7 @@ export default function App() {
       </section>
 
 
-      <section className="card">
+      <section className="card" id="habilidad">
         <h2>Qué predice de verdad, y qué no sale a producción</h2>
         <p className="note">
           Cada modelo evaluado con walk-forward sobre varios cortes temporales,
@@ -623,7 +677,7 @@ export default function App() {
 
 
 
-      <section className="card">
+      <section className="card" id="correlacion">
         <h2>Cuándo una correlación significa algo</h2>
         <p className="note">
           Esta tabla no enseña un resultado: enseña{' '}
@@ -637,7 +691,7 @@ export default function App() {
         <p className="caveat">{global.panelHow}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="calor-extremo">
         <h2>Riesgo de calor extremo: qué añade saber la fase de El Niño</h2>
         <p className="note">{global.heatwaveDesign}</p>
         <HeatwaveModel
@@ -648,7 +702,7 @@ export default function App() {
         <p className="caveat">{global.heatwaveTropics}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="sin-precedente">
         <h2>Días para los que esta ciudad no tiene precedente</h2>
         <p className="note">
           Un día sin precedente supera todo lo registrado en su misma época del
@@ -664,12 +718,12 @@ export default function App() {
           no cambie: con n valores previos, la probabilidad de que el siguiente
           los supere todos es 1/(n+1). Un 1,0 significa «lo normal».
         </p>
-        <UnprecedentedDays cities={global.unprecedented} />
+        <UnprecedentedDays cities={global.unprecedented} soloPeru={soloPeru} />
         <p className="caveat">{global.unprecedentedProof}</p>
         <p className="caveat">{global.unprecedentedLimits}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="umbrales">
         <h2>Los umbrales de alerta por calor están desfasados</h2>
         <p className="note">
           Un plan de emergencia por calor se dispara al superar un umbral, y ese
@@ -677,7 +731,7 @@ export default function App() {
           diaria, que por construcción debería superarse un 5% de los días. Ya no
           es así en ninguna de estas ciudades.
         </p>
-        <HeatThresholds cities={global.heat} />
+        <HeatThresholds cities={global.heat} soloPeru={soloPeru} />
         <p className="caveat">
           {global.heatWho}
           {global.heatCorr !== null && (
@@ -691,7 +745,7 @@ export default function App() {
         <p className="caveat">{global.heatLimits}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="replicas">
         <h2>Pronóstico de réplicas tras un sismo</h2>
         <p className="note">
           Veinticuatro horas después de un sismo de magnitud 6,5 o mayor, las
@@ -710,7 +764,7 @@ export default function App() {
       </section>
 
 
-      <section className="card">
+      <section className="card" id="peligro">
         <h2>Perfil de peligro: cuatro frentes, sin sumarlos</h2>
         <p className="note">
           Lo natural sería fundir ciclones, sismos y calor en un «índice de
@@ -719,12 +773,12 @@ export default function App() {
           ciclón de categoría 3. Cualquier peso es una opinión disfrazada de
           cálculo — y el número resultante ordenaría ciudades para decidir cosas.
         </p>
-        <HazardProfile cities={global.hazard} />
+        <HazardProfile cities={global.hazard} soloPeru={soloPeru} />
         <p className="caveat">{global.hazardNotRisk}</p>
         <p className="caveat">{global.hazardNoIndex}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="dengue">
         <h2>Dengue y clima en Perú: lo que se buscó y no está</h2>
         <p className="note">{global.dengueWhatIsIt}</p>
         <DengueClimate
@@ -741,7 +795,7 @@ export default function App() {
         <p className="caveat">{global.dengueUseful}</p>
       </section>
 
-      <section className="card">
+      <section className="card" id="fuentes">
         <h2>Fuentes, licencias y atribución</h2>
         <p className="note">
           Once fuentes abiertas. Cinco exigen atribución explícita y tres

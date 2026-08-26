@@ -9,11 +9,27 @@ import type { HeatThreshold } from '../api'
  *
  * La prioridad va con texto además de con color: nunca solo color.
  */
-export function HeatThresholds({ cities }: { cities: HeatThreshold[] }) {
+export function HeatThresholds({
+  cities,
+  soloPeru,
+}: {
+  cities: HeatThreshold[]
+  soloPeru: boolean
+}) {
+  // Escala sobre el catálogo completo aunque se filtre: ver arriba.
   const maxAmp = Math.max(...cities.map((c) => c.amplification), 1)
+  const visibles = soloPeru ? cities.filter((c) => c.country === 'PE') : cities
+  const mediaMundo =
+    cities.reduce((a, c) => a + c.amplification, 0) / Math.max(cities.length, 1)
 
   return (
     <div className="chart-scroll">
+      {soloPeru && (
+        <p className="legend">
+          {visibles.length} de {cities.length} ciudades · amplificación media
+          del catálogo <strong>×{mediaMundo.toFixed(2)}</strong>
+        </p>
+      )}
       <table className="data">
         <thead>
           <tr>
@@ -27,7 +43,7 @@ export function HeatThresholds({ cities }: { cities: HeatThreshold[] }) {
           </tr>
         </thead>
         <tbody>
-          {cities.map((c) => {
+          {visibles.map((c) => {
             const urgente = c.recalibration_priority.startsWith('1')
             return (
               <tr key={c.location_id} className={urgente ? 'pooled' : undefined}>

@@ -19,17 +19,38 @@ import type { Unprecedented } from '../api'
 const ANCHO = 132
 const MEDIO = ANCHO / 2
 
-export function UnprecedentedDays({ cities }: { cities: Unprecedented[] }) {
-  // Escala común a las dos colas: si cada una tuviera la suya, la asimetría
-  // —que es el hallazgo— desaparecería del gráfico.
+export function UnprecedentedDays({
+  cities,
+  soloPeru,
+}: {
+  cities: Unprecedented[]
+  soloPeru: boolean
+}) {
+  // La escala se calcula SIEMPRE sobre el catálogo completo, aunque se muestre
+  // solo Perú. Si se recalculara con las filas visibles, al filtrar cambiarían
+  // las longitudes de las barras y una ciudad parecería más extrema por haber
+  // quitado otras: el gráfico contaría algo distinto según el filtro.
   const maxRazon = Math.max(
     ...cities.map((c) => Math.max(c.razon_calor, c.razon_frio)),
     1,
   )
+  const visibles = soloPeru ? cities.filter((c) => c.country === 'PE') : cities
+
+  // La referencia global es lo que convierte un número en un hallazgo: ×12,73
+  // no dice nada hasta saber que la media del mundo es ×3,95.
+  const mediaMundo =
+    cities.reduce((a, c) => a + c.razon_calor, 0) / Math.max(cities.length, 1)
   const escala = (r: number) => Math.max(1, (r / maxRazon) * MEDIO)
 
   return (
     <div className="chart-scroll">
+      {soloPeru && (
+        <p className="legend">
+          {visibles.length} provincias del Perú de {cities.length} ciudades del
+          catálogo · media mundial en calor{' '}
+          <strong>×{mediaMundo.toFixed(2)}</strong>
+        </p>
+      )}
       <table className="data">
         <thead>
           <tr>
@@ -47,7 +68,7 @@ export function UnprecedentedDays({ cities }: { cities: Unprecedented[] }) {
           </tr>
         </thead>
         <tbody>
-          {cities.map((c) => {
+          {visibles.map((c) => {
             const domina = c.razon_calor > 3 * c.razon_frio
             const inverso = c.razon_frio > c.razon_calor
             return (

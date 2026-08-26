@@ -133,7 +133,8 @@ NULL_FINDINGS: list[NullFinding] = [
               "anuncian los sismos.",
         verdict="No hay ninguna relación práctica.",
         statistic="r = 0,012 entre sismos diarios en 500 km y presión "
-                  "atmosférica, sobre 219.126 días-ciudad. Explica el 0,077% de "
+                  "atmosférica, sobre 343.302 días-ciudad de 47 ciudades. Explica "
+                  "el 0,015% de "
                   "la varianza. Tokio, con la mayor muestra (1.903 sismos), da "
                   "r = −0,002.",
         why_solid="La muestra es enorme y el resultado es consistente ciudad a "
@@ -141,7 +142,11 @@ NULL_FINDINGS: list[NullFinding] = [
                   "por esfuerzo tectónico acumulado durante siglos, y las "
                   "variaciones de presión son cinco órdenes de magnitud "
                   "menores que lo que rompe una falla.",
-        lesson="Con n = 219.126 el umbral de significación cae a r = 0,0042, así "
+        lesson="La cifra exacta se mueve al crecer el catálogo —y por eso la "
+               "viva está en /patterns/seismic-weather-myth, calculada, no "
+               "escrita aquí. Lo que no se mueve es el orden de magnitud: con "
+               "cientos de miles de días el umbral de significación cae por "
+               "debajo de r = 0,005, así "
                "que una correlación irrelevante sale «estadísticamente "
                "significativa». La significación responde a «¿es distinto de "
                "cero?», no a «¿importa?». Por eso la varianza explicada va "
