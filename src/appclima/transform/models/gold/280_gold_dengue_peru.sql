@@ -79,7 +79,18 @@ WITH mapa(location_id, departamento, provincia) AS (
     ('huancayo', 'JUNIN',        'HUANCAYO'),
     ('cusco',    'CUSCO',        'CUSCO'),
     ('puno',     'PUNO',         'PUNO'),
-    ('tacna',    'TACNA',        'TACNA')
+    ('tacna',    'TACNA',        'TACNA'),
+    -- Añadidas por epidemiología, no por clima: son las provincias con más
+    -- casos del país que no tenían ninguna ciudad cerca. Llevan el panel de 6
+    -- a 12 series con transmisión y la carga cubierta del 38% al 59%.
+    -- Ojo con Morropón: la provincia se llama así pero su capital es
+    -- Chulucanas, y confundirlas rompe el emparejamiento en silencio.
+    ('sullana',          'PIURA',         'SULLANA'),
+    ('tumbes',           'TUMBES',        'TUMBES'),
+    ('talara',           'PIURA',         'TALARA'),
+    ('chulucanas',       'PIURA',         'MORROPON'),
+    ('jaen',             'CAJAMARCA',     'JAEN'),
+    ('puerto-maldonado', 'MADRE DE DIOS', 'TAMBOPATA')
 ),
 
 boletin AS (

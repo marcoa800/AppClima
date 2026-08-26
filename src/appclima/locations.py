@@ -191,6 +191,41 @@ LOCATIONS: list[Location] = [
     Location(id="tacna", name="Tacna", country="PE", lat=-18.01, lon=-70.25,
              timezone="America/Lima",
              koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    # ── Seis provincias añadidas por el dengue ─────────────────────────────
+    #
+    # No están aquí por su clima sino por su epidemiología: son las provincias
+    # con más casos notificados de Perú que no tenían ninguna ciudad cerca. Con
+    # ellas el panel pasa de 6 a 12 series y la carga cubierta del 38% al 59%.
+    #
+    # La razón no es de cobertura sino estadística. Con seis series solo dos
+    # mostraban señal, y dos no bastan para distinguir habilidad de suerte —
+    # que es la trampa en la que ya cayó el umbral térmico.
+    #
+    # Y son además un test falsable de lo que salió del análisis: si la
+    # temperatura solo manda en el BORDE de la transmisión, Tumbes y Sullana
+    # —calientes y saturadas como Piura— deberían fallar, mientras que Jaén y
+    # Puerto Maldonado deberían parecerse a Trujillo. Predicción hecha antes de
+    # mirar el dato.
+    Location(id="sullana", name="Sullana", country="PE", lat=-4.90, lon=-80.69,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="tumbes", name="Tumbes", country="PE", lat=-3.57, lon=-80.46,
+             timezone="America/Lima",
+             koppen="BSh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="talara", name="Talara", country="PE", lat=-4.58, lon=-81.27,
+             timezone="America/Lima",
+             koppen="BWh", seismic_level=3, flyway="americas-pacifico"),
+    # Capital de la provincia de Morropón. El nombre de la provincia y el de su
+    # capital no coinciden, y confundirlos rompería el emparejamiento.
+    Location(id="chulucanas", name="Chulucanas", country="PE", lat=-5.09, lon=-80.16,
+             timezone="America/Lima",
+             koppen="BSh", seismic_level=3, flyway="americas-pacifico"),
+    Location(id="jaen", name="Jaén", country="PE", lat=-5.71, lon=-78.81,
+             timezone="America/Lima",
+             koppen="Aw", seismic_level=2, flyway="americas-pacifico"),
+    Location(id="puerto-maldonado", name="Puerto Maldonado", country="PE",
+             lat=-12.60, lon=-69.19, timezone="America/Lima",
+             koppen="Am", seismic_level=1, flyway="americas-atlantico"),
 
     # ── Sudamérica ────────────────────────────────────────────────────────
     Location(id="manaus", name="Manaos", country="BR", lat=-3.12, lon=-60.02,
@@ -310,6 +345,12 @@ FLAGSHIP_IDS: tuple[str, ...] = (
     "trujillo",       # BWh  — costa norte
     "lima",           # BWh  — desierto costero templado por la corriente fría
     "tacna",          # BWh  — costa sur
+    "sullana",        # BWh  — valle del Chira, hiperendémica de dengue
+    "tumbes",         # BSh  — frontera con Ecuador
+    "talara",         # BWh  — costa desértica extrema
+    "chulucanas",     # BSh  — transición costa-sierra
+    "jaen",           # Aw   — selva alta, 730 m
+    "puerto-maldonado",  # Am — selva sur
     "iquitos",        # Af   — Amazonía
     "pucallpa",       # Af   — Amazonía
     "huaraz",         # Cwb  — Cordillera Blanca

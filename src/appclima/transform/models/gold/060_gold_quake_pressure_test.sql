@@ -22,7 +22,7 @@
 -- variables hasta que una dé p<0,05 por azar.
 --
 -- Limitaciones que hay que declarar al presentarlo:
---   - Solo hay clima observado para las 12 ciudades flagship
+--   - Solo hay clima observado para las ciudades flagship
 --   - Radio de 500 km y agregación diaria son elecciones arbitrarias
 --   - La correlación de Pearson solo detecta relación lineal
 --   - Con muchas ciudades, alguna dará |r| aparentemente alto por puro azar:

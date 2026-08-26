@@ -655,7 +655,7 @@ def export(
     if result["skipped"]:
         console.print(
             f"[dim]  {result['skipped']} rutas omitidas (404 esperado: la "
-            "climatología solo existe en las 12 ciudades flagship)[/dim]"
+            "climatología solo existe en las ciudades flagship)[/dim]"
         )
 
 
