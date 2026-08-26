@@ -15,9 +15,23 @@ on:
   workflow_run:
     workflows: ['Ingesta diaria']
     types: [completed]
+  # El filtro de rutas vigilaba solo la web y la API, y eso dejaba fuera lo
+  # que de verdad decide lo que se publica: los modelos SQL. Un arreglo en un
+  # modelo gold no republicaba el sitio, así que la web seguía sirviendo las
+  # cifras viejas hasta la siguiente ingesta — y sin avisar de nada.
+  #
+  # Pasó con la costura ERA5/IFS: el commit que corregía los umbrales de calor
+  # no disparó nada porque no tocaba `web/` ni `api/`.
   push:
     branches: [main]
-    paths: ['web/**', 'src/appclima/api/**']
+    paths:
+      - 'web/**'
+      - 'src/appclima/api/**'
+      - 'src/appclima/transform/**'   # los modelos que producen lo exportado
+      - 'src/appclima/sources/**'     # de dónde salen los datos
+      - 'src/appclima/schemas/**'
+      - 'src/appclima/null_findings.py'
+      - 'src/appclima/locations.py'
   workflow_dispatch:
 
 permissions:
