@@ -2,6 +2,8 @@
 name = "appclima"
 version = "0.1.0"
 description = "Plataforma de datos abiertos de clima, sismos y biodiversidad"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28",

@@ -127,6 +127,7 @@ de datos.
 | [IBTrACS](https://www.ncei.noaa.gov/products/international-best-track-archive) | ❌ | 0 € | Ciclones tropicales globales (CSV, 137 MB) |
 | [Banco Mundial](https://data.worldbank.org) | ❌ | 0 € | Población y desarrollo por país |
 | [NOAA CPC](https://www.cpc.ncep.noaa.gov/data/indices/) | ❌ | 0 € | Índice ONI de El Niño desde 1950 |
+| [OpenDengue](https://opendengue.org) | ❌ | 0 € | Vigilancia semanal de dengue, 129 países |
 | Catálogos curados | — | 0 € | Pandemias, población histórica, hitos |
 
 ### Por qué las pandemias son un catálogo curado y no una API
@@ -325,6 +326,30 @@ expone la varianza explicada justo al lado del test.
 
 Anotadas porque son las que no se ven en el código y volverían a morder:
 
+0. **El archivo de Open-Meteo cose dos reanálisis y no lo dice.** Sin fijar
+   `models`, usa `best_match`: sirve ERA5 hasta 2016 y el análisis operativo del
+   IFS de ECMWF desde 2017, que es cuando empieza ese archivo. La serie no tiene
+   huecos ni nulos, los valores son plausibles y la API no avisa. **La costura se
+   lee como clima.**
+
+   Medido sobre las 24 ciudades que entonces tenían archivo largo (2017-2019,
+   IFS menos ERA5): sesgo medio −0,04 °C, |sesgo| medio 0,36 °C, y hasta
+   −2,44 °C en Tacna. El sesgo medio casi nulo es lo que lo hace peligroso:
+   desaparece en cualquier agregado global y solo asoma al comparar una ciudad
+   consigo misma a lo largo del tiempo — que es lo que hace todo modelo de
+   tendencia de este proyecto.
+
+   Se detectó porque Tacna aparecía enfriándose 1,7 °C por década, que no es un
+   valor físico. Lo que costó: `gold_heat_threshold_drift` daba a Singapur
+   +2,0 °C de deriva y ×7,9 de amplificación; con un solo reanálisis son +0,3 °C
+   y ×1,8. Y el umbral térmico del dengue, que parecía nítido con p=1/924,
+   desapareció.
+
+   La defensa son tres cosas: `models=era5_seamless` fijado, una columna `model`
+   de procedencia que viaja de la ingesta hasta gold, y comprobar la coordenada
+   que devuelve la respuesta en vez de suponer que el orden coincide con el de la
+   petición.
+
 1. **Agrupar por día UTC es incorrecto.** Para Tokio (UTC+9) un día UTC empieza
    a las 09:00 locales, así que las máximas diarias mezclaban dos tardes. Por eso
    el catálogo lleva zona IANA y los agregados usan `timezone(zona, instante)`.
@@ -489,12 +514,17 @@ de muestra. Mientras tanto el Pacífico occidental, con r = 0,73, la batió en u
 
 ## Licencia y atribución
 
+El **código** de este repositorio está bajo licencia MIT — ver `LICENSE`. Los
+**datos** no: conservan la licencia de cada fuente, y varias son más
+restrictivas que MIT. Quien tome el código y use las mismas fuentes hereda esas
+condiciones, que no son mías y no puedo levantar.
+
 El catálogo completo vive en `src/appclima/attribution.py` y se sirve en
 `/sources`. Está en Python y no escrito a mano en el HTML por la misma razón que
 el catálogo de ciudades: así se versiona, se testea y no se queda obsoleto la
 primera vez que se añade una fuente.
 
-**Cinco de las nueve fuentes exigen atribución explícita** y **tres restringen el
+**Seis de las diez fuentes exigen atribución explícita** y **tres restringen el
 uso comercial**, que es la razón de que este proyecto sea y siga siendo gratuito:
 
 | Fuente | Uso comercial |
@@ -503,7 +533,7 @@ uso comercial**, que es la razón de que este proyecto sea y siga siendo gratuit
 | eBird | ⚠️ Requiere permiso del Cornell Lab |
 | GBIF | ⚠️ Algunos datasets subyacentes son CC BY-NC |
 | USGS, NOAA NCEI, IBTrACS, NOAA CPC | ✅ Dominio público |
-| Banco Mundial | ✅ CC BY 4.0 |
+| Banco Mundial, OpenDengue | ✅ CC BY 4.0 (con cita obligatoria) |
 
 **Y una cita que está incompleta, porque conviene decirlo.** Se usó la API de
 búsqueda de GBIF con facetas, que devuelve recuentos y no registros, así que GBIF

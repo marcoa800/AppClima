@@ -1,0 +1,48 @@
+MIT License
+
+Copyright (c) 2026 Marco Melgarejo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+AVISO IMPORTANTE SOBRE LOS DATOS
+
+Esta licencia MIT cubre EL CÓDIGO de este repositorio. NO cubre los datos que
+el código descarga, que conservan la licencia de cada fuente original y que en
+varios casos son más restrictivos que MIT.
+
+En particular, y esto condiciona qué se puede hacer con un despliegue:
+
+  Open-Meteo   El plan gratuito prohíbe el USO COMERCIAL, y su definición
+               incluye publicidad y patrocinios. Monetizar de cualquier forma
+               obliga a plan de pago o a autoalojar su servidor.
+  eBird        El uso comercial requiere permiso del Cornell Lab of Ornithology.
+  GBIF         Algunos datasets subyacentes son CC BY-NC.
+  OpenDengue   CC BY 4.0: exige citar Clarke J, Lim A, Gupte P, Pigott DM,
+               van Panhuis WG, Brady OJ. A global dataset of publicly available
+               dengue case count data. Scientific Data 11, 296 (2024).
+
+O sea: puedes tomar este código y hacer lo que quieras con él, pero si además
+usas las MISMAS fuentes de datos, esas condiciones te siguen aplicando a ti.
+Son de ellos, no mías, y yo no puedo levantártelas.
+
+El catálogo completo y actualizado de las diez fuentes, con su licencia y su
+cita exacta, vive en `src/appclima/attribution.py` y se sirve en `/sources`.
+Está en código y no escrito a mano precisamente para que no se quede obsoleto.
