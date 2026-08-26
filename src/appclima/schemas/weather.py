@@ -31,6 +31,15 @@ class WeatherHour(BaseModel):
     # Mezclarlos sin distinguir es la forma más rápida de invalidar un análisis.
     kind: str = Field(description="observed | forecast")
 
+    # Qué modelo produjo la fila. Sin esta columna, una serie larga puede estar
+    # cosida a partir de dos reanálisis distintos sin que nada lo delate: el
+    # dato es plausible, la ingesta no falla y el salto se lee como clima.
+    # Aquí pasó exactamente eso — ver el comentario de ARCHIVE_MODEL en
+    # sources/open_meteo.py.
+    model: str | None = Field(
+        default=None, description="Modelo de la fuente: era5_seamless, best_match…"
+    )
+
     temperature_2m: float | None = None
     apparent_temperature: float | None = None
     relative_humidity_2m: float | None = None

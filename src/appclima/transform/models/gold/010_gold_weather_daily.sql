@@ -39,7 +39,14 @@ SELECT
     round(avg(w.relative_humidity_2m), 1) AS humidity_mean,
     round(avg(w.cloud_cover), 1) AS cloud_cover_mean,
     round(max(w.wind_gusts_10m), 1) AS wind_gust_max,
-    round(sum(w.shortwave_radiation), 1) AS radiation_sum
+    round(sum(w.shortwave_radiation), 1) AS radiation_sum,
+
+    -- Procedencia. Sin esta columna una serie larga puede estar cosida a
+    -- partir de dos reanálisis y parecer clima: en Tacna la costura valía
+    -- 2,44 °C y se leía como un enfriamiento de 1,7 °C por década.
+    -- `modelo_mixto` marca el día que cae justo en la juntura.
+    any_value(w.model)                    AS model,
+    count(DISTINCT w.model) > 1           AS modelo_mixto
 FROM silver_weather_hourly w
 JOIN dim_locations l ON l.id = w.location_id
 GROUP BY 1, 2, 3

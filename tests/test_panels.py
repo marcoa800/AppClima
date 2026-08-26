@@ -245,19 +245,43 @@ class TestUmbralesDeCalor:
             SELECT count(*), sum(CASE WHEN amplification > 1 THEN 1 ELSE 0 END)
             FROM gold_heat_threshold_drift
         """).fetchone()
-        assert n == 12
-        assert por_encima >= 10, (
-            "el desfase de umbrales dejó de ser generalizado: revisar"
+        from appclima.locations import FLAGSHIP_IDS
+
+        assert n == len(FLAGSHIP_IDS)
+        # Proporción, no recuento: el catálogo de flagship crece y un mínimo
+        # absoluto de 10 dejaría de significar lo mismo con 24 ciudades.
+        assert por_encima >= 0.8 * n, (
+            f"solo {por_encima} de {n} ciudades superan su umbral más de lo "
+            "previsto: el desfase dejó de ser generalizado, revisar"
         )
 
-    def test_singapur_es_el_caso_extremo(self, con):
-        """Clima estable, así que no tiene margen para absorber el cambio."""
-        amp, drift = con.execute("""
-            SELECT amplification, threshold_drift_c
-            FROM gold_heat_threshold_drift WHERE location_id = 'singapore'
+    def test_el_desfase_es_real_pero_moderado(self, con):
+        """El tamaño del efecto, después de arreglar el termómetro.
+
+        Este test decía que Singapur amplificaba ×7,9 con una deriva de
+        +2,0 °C. Era falso: el archivo cosía ERA5 con el IFS de ECMWF en 2017
+        y buena parte de esa "deriva" era el cambio de modelo. Con un único
+        reanálisis, Singapur amplifica ×1,8 con +0,3 °C de deriva.
+
+        El fenómeno sigue ahí —21 de 24 ciudades superan su umbral más de lo
+        previsto, hasta ×2,8— pero no es espectacular. Se fija un techo además
+        de un suelo: si alguna ciudad volviera a pasar de ×5, lo primero que
+        hay que mirar no es el clima sino la procedencia del dato.
+        """
+        amp_max, drift_max = con.execute("""
+            SELECT max(amplification), max(threshold_drift_c)
+            FROM gold_heat_threshold_drift
         """).fetchone()
-        assert amp >= 5, "Singapur debería seguir en prioridad urgente"
-        assert drift > 1
+
+        assert amp_max > 1.5, (
+            f"la amplificación máxima cayó a {amp_max}: el desfase dejó de "
+            "existir, revisar si es real o un cambio en los datos"
+        )
+        assert amp_max < 5, (
+            f"amplificación de {amp_max}: sospechosamente alta. Comprobar "
+            "`procedencia_fiable` antes de darla por buena"
+        )
+        assert 0.2 < drift_max < 3, f"deriva máxima fuera de rango: {drift_max}"
 
     def test_los_climas_estables_se_amplifican_mas(self, con):
         """La correlación que hace el hallazgo contraintuitivo y accionable.

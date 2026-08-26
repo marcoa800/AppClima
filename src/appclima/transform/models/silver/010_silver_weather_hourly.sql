@@ -14,6 +14,12 @@
 --
 -- Dentro de un mismo kind sí deduplicamos: bronze es append-only, así que
 -- reejecutar el cron el mismo día genera filas repetidas. Gana la más reciente.
+--
+-- `model` viaja hasta aquí a propósito. Una serie larga puede estar cosida a
+-- partir de dos reanálisis distintos sin que falte una sola hora, y sin esta
+-- columna no hay forma de saberlo mirando el almacén. El test
+-- `test_weather_provenance` se apoya en ella para exigir que ninguna ciudad
+-- mezcle modelos en su archivo observado.
 
 CREATE OR REPLACE TABLE silver_weather_hourly AS
 WITH ranked AS (
@@ -35,6 +41,7 @@ WITH ranked AS (
         wind_direction_10m,
         wind_gusts_10m,
         shortwave_radiation,
+        model,
         _ingested_at,
         row_number() OVER (
             PARTITION BY location_id, time, kind

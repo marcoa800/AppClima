@@ -30,6 +30,44 @@ log = logging.getLogger(__name__)
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 
+# ══ Por qué el modelo va fijado y no se deja el que viene por defecto ═══════
+#
+# El archivo de Open-Meteo, si no le dices el modelo, usa `best_match`. Suena
+# sensato. Lo que hace en realidad es servir **ERA5 hasta 2016 y el análisis
+# operativo del IFS de ECMWF desde 2017**, que es cuando empieza ese archivo.
+#
+# El resultado es una serie cosida a partir de dos reanálisis con resoluciones
+# distintas, con una costura en enero de 2017 que ninguna comprobación de
+# ingesta puede ver: no faltan horas, no hay nulos, los valores son plausibles
+# y la API no avisa. La costura se lee como si fuera clima.
+#
+# Medido sobre las 24 ciudades con archivo largo (2017-2019, IFS menos ERA5):
+#
+#     sesgo medio      -0,04 °C   ← se cancela en el agregado global
+#     |sesgo| medio     0,36 °C
+#     Tacna            -2,44 °C   ← terreno costero abrupto
+#     Ushuaia          +0,91 °C
+#     Ciudad de México +0,69 °C
+#
+# El sesgo medio cercano a cero es lo que hace peligroso el bug: en cualquier
+# media global desaparece, y solo aparece cuando comparas una ciudad consigo
+# misma a lo largo del tiempo — que es justo lo que hace todo modelo de
+# tendencia de este proyecto. `gold_heat_threshold_drift` compara 2006-2018
+# contra 2019-2025: la costura cae dentro y parte de la "deriva" era el cambio
+# de modelo, no calentamiento.
+#
+# Se detectó porque Tacna aparecía enfriándose 1,7 °C por década. Nada
+# fallaba; simplemente la cifra era imposible.
+#
+# `era5_seamless` es ERA5 completado con ERA5-Land donde existe: un solo
+# reanálisis coherente de 1940 a hoy.
+ARCHIVE_MODEL = "era5_seamless"
+
+# Tolerancia al comparar la coordenada devuelta con la pedida. Open-Meteo
+# responde con el centro de la celda del modelo, que se desplaza hasta ~0,25°
+# respecto al punto solicitado.
+COORD_TOLERANCE_DEG = 0.35
+
 # El límite gratuito de Open-Meteo se cuenta por PESO, no por peticiones:
 #
 #     peso ≈ ubicaciones × (variables / 10) × (días / 7)
@@ -58,7 +96,7 @@ def _as_list(payload: object) -> list[dict]:
     raise TypeError(f"Respuesta inesperada de Open-Meteo: {type(payload)}")
 
 
-def _parse_block(block: dict, location: Location, kind: str) -> list[WeatherHour]:
+def _parse_block(block: dict, location: Location, kind: str, model: str | None = None) -> list[WeatherHour]:
     """Convierte el bloque `hourly` (arrays paralelos) en filas."""
     hourly = block.get("hourly")
     if not hourly:
@@ -89,6 +127,7 @@ def _parse_block(block: dict, location: Location, kind: str) -> list[WeatherHour
                 lon=location.lon,
                 time=parsed,
                 kind=kind,
+                model=model,
                 **{var: columns[var][i] for var in HOURLY_VARIABLES},
             )
         )
@@ -103,6 +142,7 @@ def _fetch(
     variables: tuple[str, ...] = HOURLY_VARIABLES,
     batch_size: int = BATCH_SIZE,
     pace: float = 0.0,
+    model: str | None = None,
 ) -> list[WeatherHour]:
     rows: list[WeatherHour] = []
 
@@ -119,6 +159,7 @@ def _fetch(
             # UTC en el origen. Convertir a hora local es problema de la UI,
             # nunca del almacén: mezclar zonas en el warehouse es irreversible.
             "timezone": "UTC",
+            **({"models": model} if model else {}),
             **extra_params,
         }
 
@@ -130,8 +171,22 @@ def _fetch(
                 "ubicaciones. El orden ya no es fiable: abortando."
             )
 
+        # Comprobar el orden en vez de confiar en él. La respuesta trae la
+        # coordenada de cada bloque, así que la alineación es verificable — y
+        # una petición con seis ubicaciones que se reordene en silencio
+        # atribuiría el clima de una ciudad a otra sin que nada fallara.
         for block, location in zip(payload, chunk, strict=True):
-            rows.extend(_parse_block(block, location, kind))
+            lat, lon = block.get("latitude"), block.get("longitude")
+            if lat is None or lon is None or (
+                abs(lat - location.lat) > COORD_TOLERANCE_DEG
+                or abs(lon - location.lon) > COORD_TOLERANCE_DEG
+            ):
+                raise ValueError(
+                    f"Open-Meteo devolvió ({lat}, {lon}) para {location.id}, que "
+                    f"está en ({location.lat}, {location.lon}). El orden de la "
+                    "respuesta no coincide con el de la petición: abortando."
+                )
+            rows.extend(_parse_block(block, location, kind, model))
 
     return rows
 
@@ -193,6 +248,7 @@ def fetch_archive(
             variables=variables,
             batch_size=ARCHIVE_BATCH_SIZE,
             pace=pace,
+            model=ARCHIVE_MODEL,
         )
         log.info("Archivo %s→%s: %d filas", cursor, chunk_end, len(rows))
         yield rows

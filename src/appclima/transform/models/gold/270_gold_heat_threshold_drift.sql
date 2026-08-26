@@ -40,9 +40,38 @@
 
 CREATE OR REPLACE TABLE gold_heat_threshold_drift AS
 WITH daily AS (
-    SELECT location_id, local_date, year(local_date) AS yr, temp_max, temp_mean
+    SELECT location_id, local_date, year(local_date) AS yr, temp_max, temp_mean,
+           coalesce(model, '(sin registrar)') AS modelo
     FROM gold_weather_daily
     WHERE kind = 'observed' AND temp_max IS NOT NULL
+),
+
+-- ══ Procedencia, y por qué esta tabla la necesita más que ninguna ═══════════
+--
+-- Este modelo compara una ventana de referencia contra otra reciente, así que
+-- **cualquier cambio de instrumento entre ambas se lee como deriva térmica**.
+-- Es la tabla del proyecto más vulnerable a eso, y durante un tiempo lo
+-- estuvo: el archivo de Open-Meteo cosía ERA5 con el IFS de ECMWF en 2017,
+-- justo dentro de la ventana, y parte de la "deriva" era el cambio de modelo.
+--
+-- Medido sobre las 24 ciudades: sesgo medio -0,04 °C (invisible en agregado),
+-- |sesgo| medio 0,36 °C, y hasta 2,44 °C en Tacna.
+--
+-- La columna no arregla nada: hace visible cuándo la cifra no es de fiar. Una
+-- ciudad con `procedencia_mixta` debe recalcularse antes de publicarse.
+-- El criterio es "todo el archivo viene de un reanálisis único y conocido",
+-- no "no hay mezcla". La diferencia importa: una ciudad cuyo archivo entero se
+-- descargó con `best_match` no está mezclada —es uniformemente la serie cosida
+-- ERA5+IFS— y un test de mezcla la daría por buena. Sería la peor falsa
+-- tranquilidad posible, porque son justo las que nadie ha vuelto a bajar.
+procedencia AS (
+    SELECT
+        location_id,
+        count(DISTINCT modelo) = 1
+            AND max(modelo) = 'era5_seamless' AS procedencia_fiable,
+        string_agg(DISTINCT modelo, ', ')     AS modelos
+    FROM daily
+    GROUP BY 1
 ),
 -- El umbral tal como se habría calibrado con la ventana de referencia.
 calibracion AS (
@@ -105,8 +134,14 @@ SELECT
         WHEN (100.0 * e.n_exceeded / e.n_recent_days) / 5.0 >= 3 THEN '2. alta'
         WHEN (100.0 * e.n_exceeded / e.n_recent_days) / 5.0 >= 1.8 THEN '3. media'
         ELSE '4. baja'
-    END AS recalibration_priority
+    END AS recalibration_priority,
+
+    -- Si esto es falso, la deriva de esta fila mezcla calentamiento con
+    -- cambio de reanálisis y no debe publicarse como si fuera clima.
+    p.procedencia_fiable,
+    p.modelos AS procedencia_modelos
 FROM calibracion c
 JOIN evaluacion e ON e.location_id = c.location_id
 JOIN dim_locations l ON l.id = c.location_id
-ORDER BY amplification DESC;
+JOIN procedencia p ON p.location_id = c.location_id
+ORDER BY amplification DESC, c.location_id;
